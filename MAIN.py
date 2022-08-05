@@ -3,10 +3,7 @@ import sys
 import Core
 import Presentation
 
-# os.chdir('/path/to/directory/containing/all/CP2K/calculation/subdirectories')
-
-
-os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
+os.chdir('/path/to/directory/containing/all/CP2K/calculation/subdirectories')
 
 class bcolors:
     HEADER = '\033[95m'
