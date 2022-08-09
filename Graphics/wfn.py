@@ -157,7 +157,7 @@ class WfnStructurePlotFrame(QWidget):
                     exec(f'self.series{i}{self.suffix}.setBaseColor(self.color{elem}{self.suffix})')
                     exec(f'self.series{i}{self.suffix}.setItemSize(float(self.size{elem}{self.suffix}))')
 
-        exec(f'modifier = Graphics.ScatterDataModifier(self.subdir, self.suffix, self.scatter{self.suffix}, self.series1{self.suffix}, '
+        exec(f'modifier = Graphics.ScatterDataModifier(self.scatter{self.suffix}, self.series1{self.suffix}, '
              f'self.series2{self.suffix}, self.series3{self.suffix}, self.series4{self.suffix}, '
              f'self.series5{self.suffix}, self.series6{self.suffix}, self.series7{self.suffix}, '
              f'self.series8{self.suffix}, self.series9{self.suffix}, self.series10{self.suffix}).plotBonds(self.addBond_0,'
@@ -585,19 +585,8 @@ class WfnStructurePlotFrame(QWidget):
 
 class ScatterDataModifier:
 
-    def __init__(self, subdir, suffix, m_graph, series1, series2, series3, series4, series5, series6, series7, series8, series9, series10):
-        self.subdir = subdir
-        self.suffix = suffix
+    def __init__(self, m_graph, series1, series2, series3, series4, series5, series6, series7, series8, series9, series10):
         self.m_graph = m_graph
-        self.X = []
-        self.Y = []
-        self.Z = []
-        self.atoms = []
-        self.num_kinds, self.included_atoms = FromFile.Kinds(
-            Core.Extension().files4defect(".inp", self.subdir)).searchingfile()
-        self.num_kind = self.num_kinds + 1
-        self.totatom = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["Geometry"][-1][
-                           'Index'] + 1
 
         self.m_graph.activeTheme().setType(Q3DTheme.ThemeEbony)
         self.m_graph.activeTheme().setBackgroundColor(QColor(Qt.black))
