@@ -13,7 +13,7 @@ class Extension:
         # want to find inp, log, pdos, xyz
         if file_extension == ".pdos":
             files = []
-        elif file_extension == ".inp":
+        else:
             File = ' '
         perfwd = str(self.cwd + "/" + wd)
         for file in os.listdir(perfwd):
@@ -30,95 +30,39 @@ class Extension:
             return File
 
     def All_defect_subdir(self, file_extension, wd):
-        # want to take note of all subdirectories until inp, log, pdos, xyz files found
-        dwd = str(self.cwd + "/" + wd)
-        def_subdir = wd
         subsubdirs = []
         var_suffix = []
-#glob or os file io-
-        for sub1item in os.listdir(dwd): # 1st tier
-            if os.path.isdir(os.path.join(dwd, sub1item)): # tier 1 opt 1
-                for sub2item in os.listdir(os.path.join(dwd, sub1item)): # 2nd tier
-                    if os.path.isdir(os.path.join(dwd, sub1item, sub2item)): # tier 2 opt 1
-                        for sub3item in os.listdir(os.path.join(dwd, sub1item, sub2item)): # 3rd tier
-                            if sub3item != ".ipynb_checkpoints":
-                                if os.path.isdir(os.path.join(dwd, sub1item, sub2item, sub3item)): # tier 3 opt 1
-                                    for sub4item in os.listdir(os.path.join(dwd, sub1item, sub2item, sub3item)): # 4th tier
-                                        if os.path.isdir(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item)): # tier 4 opt 1
-                                            for sub5item in os.listdir(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item)): # 5th tier
-                                                if os.path.isdir(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item, sub5item)): # tier 5 opt 1
-                                                    for sub6item in os.listdir(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item, sub5item)):
-                                                        if os.path.isfile(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item, sub5item, sub6item)):
-                                                            if sub6item.endswith(file_extension):
-                                                                print('hi, you need to add another for-if cycle')
-                                                if os.path.isfile(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item, sub5item)): # tier 5 opt 2
-                                                    if sub5item.endswith(file_extension):
-                                                        sub_dir_path = os.path.join(dwd, sub1item, sub2item, sub3item, sub4item)
-                                                        subsubdirs.append(sub_dir_path)
-                                                        name = str(def_subdir + "_" + sub1item + "_" + sub2item + "_" + sub3item + "_"+ sub4item)
-                                                        var_suffix.append(name)
-                                        if os.path.isfile(os.path.join(dwd, sub1item, sub2item, sub3item, sub4item)): # tier 4 opt 2
-                                            if sub4item.endswith(file_extension):
-                                                sub_dir_path = os.path.join(dwd, sub1item, sub2item, sub3item)
-                                                subsubdirs.append(sub_dir_path)
-                                                name = str(def_subdir + "_" + sub1item + "_" + sub2item + "_" + sub3item)
-                                                var_suffix.append(name)
-                                elif os.path.isfile(os.path.join(dwd, sub1item, sub2item, sub3item)): # tier 3 opt 2
-                                    if sub3item.endswith(file_extension):
-                                        sub_dir_path = os.path.join(dwd, sub1item, sub2item)
-                                        subsubdirs.append(sub_dir_path)
-                                        name = str(def_subdir + "_" + sub1item + "_" + sub2item)
-                                        var_suffix.append(name)
-                    elif os.path.isfile(os.path.join(dwd, sub1item, sub2item)): # tier 2 opt 2
-                        if sub2item.endswith(file_extension):
-                            sub_dir_path = os.path.join(dwd, sub1item)
-                            subsubdirs.append(sub_dir_path)
-                            name = str(def_subdir + "_" + sub1item)
-                            var_suffix.append(name)
-            elif os.path.isfile(os.path.join(dwd, sub1item)): # tier 1 opt 2
-                if sub1item.endswith(file_extension):
-                    sub_dir_path = os.path.join(dwd)
-                    subsubdirs.append(sub_dir_path)
-                    name = str(def_subdir)
-                    var_suffix.append(name)
-
-        if Core.UserArguments.Exception is True:
-            if type(Core.UserArguments.NotDir) == list:
-                for elem in list(Core.UserArguments.NotDir):
-                    for elem1, elem2 in zip(list(subsubdirs), list(var_suffix)):
-                        if elem1.find(elem) != -1:
-                            subsubdirs.remove(elem1)
-                            var_suffix.remove(elem2)
-            else:
-                for elem1, elem2 in zip(list(subsubdirs), list(var_suffix)):
-                    if elem1.find(Core.UserArguments.NotDir) != -1:
-                        subsubdirs.remove(elem1)
-                        var_suffix.remove(elem2)
-
-        if Core.UserArguments.Only is True:
-            changedirs = []
-            changesufs = []
-            if type(Core.UserArguments.OnlyDir) == list:
-                for elem in list(Core.UserArguments.OnlyDir):
-                    for elem1, elem2 in zip(list(subsubdirs), list(var_suffix)):
-                        elem3 = str(elem1 + "/")
-                        if elem3.find(elem) != -1:
-                            dir = elem1
-                            suf = elem2
-                            changedirs.append(dir)
-                            changesufs.append(suf)
-
-            else:
-                for elem1, elem2 in zip(list(subsubdirs), list(var_suffix)):
-                    elem3 = str(elem1 + "/")
-                    if elem3.find(Core.UserArguments.OnlyDir) != -1:
-                        dir = elem1
-                        sur = elem2
-                        changedirs.append(dir)
-                        changesufs.append(sur)
-            subsubdirs = changedirs
-            var_suffix = changesufs
-
+        paths = [wd]
+        for path in paths:
+            dwd = str(self.cwd + "/" + path)
+            obj = os.scandir(dwd)
+            for entry in obj:
+                if not entry.name.startswith('.') and entry.is_dir():
+                    if Core.UserArguments.Exception is False:
+                        paths.append(os.path.join(path, str("{}".format(entry.name))))
+                    elif Core.UserArguments.Exception is True:
+                        if type(Core.UserArguments.NotDir) == list:
+                            if all(elem not in entry.name for elem in Core.UserArguments.NotDir):
+                                paths.append(os.path.join(path, str("{}".format(entry.name))))
+                            else:
+                                if entry.name.find(Core.UserArguments.NotDir) == -1:
+                                    paths.append(os.path.join(path, str("{}".format(entry.name))))
+                elif not entry.name.startswith('.') and entry.is_file():
+                    if Core.UserArguments.Only is True:
+                        if type(Core.UserArguments.OnlyDir) == list:
+                            if any(elem in path for elem in Core.UserArguments.OnlyDir):
+                                if entry.name.endswith(file_extension):
+                                    subsubdirs.append(path)
+                                    var_suffix.append(path.replace('/', '_'))
+                        else:
+                            if path.find(Core.UserArguments.OnlyDir) != -1:
+                                if entry.name.endswith(file_extension):
+                                    subsubdirs.append(path)
+                                    var_suffix.append(path.replace('/', '_'))
+                    elif Core.UserArguments.Only is False:
+                        if entry.name.endswith(file_extension):
+                            subsubdirs.append(path)
+                            var_suffix.append(path.replace('/', '_'))
         return subsubdirs, var_suffix
 
     def files4defect(self, file_extension, subdir):
@@ -149,6 +93,5 @@ class Extension:
                         return inp_file
             else:
                 return input_file
-
 
 Extension()
