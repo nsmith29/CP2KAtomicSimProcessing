@@ -7,8 +7,12 @@ from Core import Extension
 
 class ControlChargeSpins:
     charges_and_spinsData = dict()
+    Indices = []
     def __init__(self, answers):
         self.indices = answers.split(',')
+
+        if Core.UserWants.AnalysisWants == 'n':
+            self.SaveIndices(self.indices)
 
         self.perfsubdir = Core.UserArguments.PerfectSubdir
         self.perffile = Extension().perfect_subdir(".log", self.perfsubdir)
@@ -29,6 +33,9 @@ class ControlChargeSpins:
 
         self.CreateDataFrame4Results()
 
+    @classmethod
+    def  SaveIndices(cls, indices):
+        ControlChargeSpins.Indices = indices
 
     @classmethod
     def CreateDictionary(cls, projectname, filename, indices):
@@ -81,24 +88,15 @@ class ControlChargeSpins:
 
     def CreateDataFrame4Results(self):
         for name in list(self.projectnames):
-            columnstring = []
-            columnstring.append(' ')
-            chargesM1 = []
-            spinsM1 = []
-            popAM1 = []
-            popBM1 = []
-            chargesM1.append("charge")
-            spinsM1.append("spin")
-            popAM1.append("pop \u03B1")
-            popBM1.append("pop \u03B2")
-            chargesM2 = []
-            spinsM2 = []
-            popAM2 = []
-            popBM2 = []
-            chargesM2.append("charge")
-            spinsM2.append("spin")
-            popAM2.append("pop \u03B1")
-            popBM2.append("pop \u03B2")
+            columnstring = [' ']
+            chargesM1 = ["charge"]
+            spinsM1 = ["spin"]
+            popAM1 = ["pop \u03B1"]
+            popBM1 = ["pop \u03B2"]
+            chargesM2 = ["charge"]
+            spinsM2 = ["spin"]
+            popAM2 = ["pop \u03B1"]
+            popBM2 = ["pop \u03B2"]
             for index in self.indices:
                 string = str('{}, {}'.format(self.perfsubdir,index))
                 columnstring.append(string)
@@ -153,24 +151,17 @@ class ControlChargeSpins:
 
 class CreateDataFrame4ResultsCSV:
     def __init__(self, name):
-        columnstring = []
-        columnstring.append(' ')
-        chargesM1 = []
-        spinsM1 = []
-        popAM1 = []
-        popBM1 = []
-        chargesM1.append("charge")
-        spinsM1.append("spin")
-        popAM1.append("pop \u03B1")
-        popBM1.append("pop \u03B2")
-        chargesM2 = []
-        spinsM2 = []
-        popAM2 = []
-        popBM2 = []
-        chargesM2.append("charge")
-        spinsM2.append("spin")
-        popAM2.append("pop \u03B1")
-        popBM2.append("pop \u03B2")
+        self.indices = ControlChargeSpins.Indices
+        self.perfsubdir = Core.UserArguments.PerfectSubdir
+        columnstring = [' ']
+        chargesM1 = ["charge"]
+        spinsM1 = ["spin"]
+        popAM1 = ["pop \u03B1"]
+        popBM1 = ["pop \u03B2"]
+        chargesM2 = ["charge"]
+        spinsM2 = ["spin"]
+        popAM2 = ["pop \u03B1"]
+        popBM2 = ["pop \u03B2"]
         if name == Core.UserArguments.PerfectSubdir:
             for index in self.indices:
                 string = str('{}, {}'.format(self.perfsubdir,index))
