@@ -1,9 +1,13 @@
+import multiprocessing
 import os
 import sys
+from multiprocessing import Process
+import functools
 import Core
 import Presentation
+import DataProcessing
 
-os.chdir('/path/to/directory/containing/all/CP2K/calculation/subdirectories')
+os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
 
 class bcolors:
     HEADER = '\033[95m'
@@ -150,6 +154,31 @@ class Start:
                 Presentation.csvfile().Append()
 
         Core.UserWants(analysis, display)
-        Core.ProcessingControls(processing, followupQs)
+        Core.ProcessingControls.SavingOtherWants(processing, followupQs)
 
-Start(*sys.argv)
+if __name__ =='__main__':
+    Start(*sys.argv)
+
+    if Core.UserWants.DisplayWants == 'n':
+        for i in range(len(Core.ProcessingControls.ProcessingWants)):
+            if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
+                if Core.UserWants.AnalysisWants == 'n':
+                    pro1a = Process(target=Core.ProcessingControls.PdosNo())
+                    pro1a.start()
+                elif Core.UserWants.AnalysisWants == 'y':
+                    pro1b = Process(target=DataProcessing.ControlPdos().YesAnalysis())
+                    pro1b.start()
+            if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
+                pro2 = Process(target=DataProcessing.ControlWfn())
+                pro2.start()
+            if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
+                followupAns = Core.ProcessingControls.Followups[i]
+                followup_Ans = Core.ProcessingControls.Process_wants[i]
+                if Core.UserWants.AnalysisWants == 'n':
+                    pro3a = Process(target=Core.ProcessingControls.CharSpinNo(),args=(followupAns,followup_Ans,))
+                    pro3a.start()
+                if Core.UserWants.AnalysisWants == 'y':
+                    pro3b = Process(target=DataProcessing.ControlChargeSpins,args=(followupAns,))
+                    pro3b.start()
+
+
