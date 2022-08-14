@@ -4,8 +4,8 @@ Python code package for automatically processing and analysing CP2K atomic simul
 ### Required Python Library dependencies [subject to change]
 - ASE
 - Pandas
-- qt4
-- qt5/qt6
+- qt4 [only qt4 is compatible with mayavi and pyface - needed for wavefunction analysis]
+- qt5 or qt6
 - PySide6
 - mayavi
 - pyface
