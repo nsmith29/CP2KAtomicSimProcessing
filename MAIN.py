@@ -1,8 +1,6 @@
-import multiprocessing
 import os
 import sys
 from multiprocessing import Process
-import functools
 import Core
 import Presentation
 import DataProcessing
