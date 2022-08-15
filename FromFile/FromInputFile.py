@@ -1,3 +1,4 @@
+import Core
 import FromFile
 
 class NameOfProject:
@@ -10,7 +11,6 @@ class NameOfProject:
             project_name = name[-1]
 
         return project_name
-
 
 class Kinds:
     kind = '     &KIND'
@@ -78,3 +78,21 @@ class ChargeStateIdentification:
     def returnstate(self):
         return int(self.state)
 
+class OnlyNeutralWanted:
+    def __init__(self, all_subdirs, all_suffixs):
+        self.allsubdirs = all_subdirs
+        self.allsuffixs = all_suffixs
+
+        self.subdirs = []
+        self.suffixs = []
+
+    def ReturnPaths(self):
+        for subdir, suffix in zip(list(self.allsubdirs), list(self.allsuffixs)):
+            if FromFile.ChargeStateIdentification(Core.Extension().files4defect(".inp", subdir)).returnstate() == 0:
+                self.subdirs.append(subdir)
+                self.suffixs.append(suffix)
+        return self.subdirs, self.suffixs
+
+class CheckSameCalculationSettings:
+    def __init__(self, ref_input_file, check_input_file):
+        print('tbd')

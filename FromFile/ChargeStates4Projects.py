@@ -8,26 +8,34 @@ class SortingChargeStates:
         self.defneutral = []
         self.neutralsubdir = []
         self.namesneutral = []
+        self.inpneutral = []
 
         self.defneg1 = []
         self.namesneg1 = []
+        self.inpneg1 = []
         self.defneg2 = []
         self.namesneg2 = []
+        self.inpneg2 = []
         self.defneg3 = []
         self.namesneg3 = []
+        self.inpneg3 = []
 
         self.defpos1 = []
         self.namespos1 = []
+        self.inppos1 = []
         self.defpos2 = []
         self.namespos2 = []
+        self.inppos2 = []
         self.defpos3 = []
         self.namespos3 = []
+        self.inppos3 = []
 
         self.CategorisingChargeStates()
         for i in range(len(self.namesneutral)):
             name = self.namesneutral[i]
             neutral_file = self.defneutral[i]
-            charged_logfiles = self.Grouping4Projects(name, neutral_file)
+            reference_inp = self.inpneutral[i]
+            charged_logfiles = self.Grouping4Projects(name, reference_inp)
 
             subdir = self.neutralsubdir[i]
             self.ProjectDictionary(name, subdir, neutral_file, charged_logfiles)
@@ -41,121 +49,47 @@ class SortingChargeStates:
             if FromFile.ChargeStateIdentification(inpfile).returnstate() == 0:
                 self.defneutral.append(logfile)
                 self.neutralsubdir.append(subdir)
+                self.inpneutral.append(inpfile)
                 name = FromFile.NameOfProject(inpfile).ReturnName()
                 self.namesneutral.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == 1:
-                self.defpos1.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namespos1.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == 2:
-                self.defpos2.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namespos2.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == 3:
-                self.defpos3.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namespos3.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == -1:
-                self.defneg1.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namesneg1.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == -2:
-                self.defneg2.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namesneg2.append(name)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == -3:
-                self.defneg3.append(logfile)
-                name = FromFile.NameOfProject(inpfile).ReturnName()
-                self.namesneg3.append(name)
+            for num in 1, 2, 3:
+                if FromFile.ChargeStateIdentification(inpfile).returnstate() == num:
+                    exec(f'self.defpos{num}.append(logfile)')
+                    exec(f'self.inppos{num}.append(inpfile)')
+                    name = FromFile.NameOfProject(inpfile).ReturnName()
+                    exec(f'self.namespos{num}.append(name)')
+                if FromFile.ChargeStateIdentification(inpfile).returnstate() == -num:
+                    exec(f'self.defneg{num}.append(logfile)')
+                    exec(f'self.inpneg{num}.append(inpfile)')
+                    name = FromFile.NameOfProject(inpfile).ReturnName()
+                    exec(f'self.namesneg{num}.append(name)')
 
-    def Grouping4Projects(self, name, file):
-        ref = file.split('/')
-        reference = ref[-2]
+    def Grouping4Projects(self, name, reference):
         logfiles = []
-
         if self.defneg1 != []:
-            for j in range(len(self.namesneg1)):
-                if name == self.namesneg1[j]:
-                    logfiles.append(self.defneg1[j]) # need to do something here to make sure if there are multiple different calculation sets with same project name in inps that the correct charge state log.
-                    if len(logfiles) >= 2:
-                        for log in list(logfiles):
-                            test = log.split('/')
-                            Test = test[-2]
-                            if Test != reference:
-                                logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namesneg1,self.defneg1,self.inpneg1,reference).Return())
         else:
             logfiles.append('-')
-
         if self.defneg2 != []:
-            for j in range(len(self.namesneg2)):
-                if name == self.namesneg2[j]:
-                    logfiles.append(self.defneg2[j])
-                    if len(logfiles) >= 3:
-                        for log in list(logfiles):
-                            if log != '-':
-                                test = log.split('/')
-                                Test = test[-2]
-                                if Test != reference:
-                                    logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namesneg2, self.defneg2, self.inpneg2, reference).Return())
         else:
             logfiles.append('-')
-
         if self.defneg3 != []:
-            for j in range(len(self.namesneg3)):
-                if name == self.namesneg3[j]:
-                    logfiles.append(self.defneg3[j])
-                    if len(logfiles) >= 4:
-                        for log in list(logfiles):
-                            if log != '-':
-                                test = log.split('/')
-                                Test = test[-2]
-                                if Test != reference:
-                                    logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namesneg3, self.defneg3, self.inpneg3, reference).Return())
         else:
             logfiles.append('-')
-
         if self.defpos1 != []:
-            for j in range(len(self.namespos1)):
-                if name == self.namespos1[j]:
-                    logfiles.append(self.defpos1[j])
-                    if len(logfiles) >= 5:
-                        for log in list(logfiles):
-                            if log != '-':
-                                test = log.split('/')
-                                Test = test[-2]
-                                if Test != reference:
-                                    logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namespos1, self.defpos1, self.inppos1, reference).Return())
         else:
             logfiles.append('-')
-
         if self.defpos2 != []:
-            for j in range(len(self.namespos2)):
-                if name == self.namespos2[j]:
-                    logfiles.append(self.defpos2[j])
-                    if len(logfiles) >= 6:
-                        for log in list(logfiles):
-                            if log != '-':
-                                test = log.split('/')
-                                Test = test[-2]
-                                if Test != reference:
-                                    logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namespos2, self.defpos2, self.inppos2, reference).Return())
         else:
             logfiles.append('-')
-
         if self.defpos3 != []:
-            for j in range(len(self.namespos3)):
-                if name == self.namespos3[j]:
-                    logfiles.append(self.defpos3[j])
-                    if len(logfiles) >= 7:
-                        for log in list(logfiles):
-                            if log != '-':
-                                test = log.split('/')
-                                Test = test[-2]
-                                if Test != reference:
-                                    logfiles.remove(log)
+            logfiles.append(FromFile.ProjectSortingIt(name, self.namespos3, self.defpos3, self.inppos3, reference).Return())
         else:
             logfiles.append('-')
-
         return logfiles
 
     @classmethod
@@ -178,3 +112,19 @@ class SortingChargeStates:
 
     def returnprojectnames(self):
         return self.namesneutral
+
+class ProjectSortingIt:
+    def __init__(self, name, statenames, statefiles, stateinputs, reference):
+        self.file2return = []
+        appendedJ = []
+        for j in range(len(statenames)):
+            if name == statenames[j]:
+                self.file2return.append(statefiles[j])
+                appendedJ.append(j)
+                if len(self.file2return) >= 2:
+                    for file, J in zip(list(self.file2return), list(appendedJ)):
+                        if FromFile.CheckSameCalculationSettings(reference, stateinputs[J]) == False:
+                            self.file2return.remove(file)
+                            appendedJ.remove(J)
+    def Return(self):
+        return self.file2return

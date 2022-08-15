@@ -1,4 +1,4 @@
-from FromFile.FromInputFile import Kinds, ChargeStateIdentification, NameOfProject
+from FromFile.FromInputFile import Kinds, ChargeStateIdentification, NameOfProject, OnlyNeutralWanted, CheckSameCalculationSettings
 from FromFile.FromXYZFile import LastXYZ, NumTotAtomsOfKind
 from FromFile.FromLogFile import GetChargesSpins
-from FromFile.ChargeStates4Projects import SortingChargeStates
+from FromFile.ChargeStates4Projects import SortingChargeStates, ProjectSortingIt
