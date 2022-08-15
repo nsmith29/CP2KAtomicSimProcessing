@@ -64,75 +64,24 @@ class ProcessingControls:
         ProcessingControls.Followups = followupQs
         ProcessingControls.Process_wants = process_wants
 
-    def PdosNo(self):
+    @staticmethod
+    def PdosNo():
         Presentation.csvfile.turnFalse('pdos')
         action = DataProcessing.ControlPdos().NoAnalysis()
 
-    def CharSpinNo(self, followupAns, followup_Ans):
+    @staticmethod
+    def CharSpinNo(followupAns, followup_Ans):
         Presentation.csvfile.turnFalse(followup_Ans)
         action = DataProcessing.ControlChargeSpins(followupAns)
 
-    # def __init__(self, processing, followupQs):
-    #     self.processing = processing.split(',')
-    #     self.followupQs = followupQs
-    #     ProcessingControls.SavingOtherWants(self.processing, self.followupQs)
-        # if UserWants.DisplayWants == 'n':
-        #     for i in range(len(self.processing)):
-        #         if self.processing[i] == 'pdos':
-        #             if UserWants.AnalysisWants == 'n':
-        #                 Presentation.csvfile.turnFalse('pdos')
-        #                 action = DataProcessing.ControlPdos().NoAnalysis()
-        #             elif UserWants.AnalysisWants == 'y':
-        #                 action = DataProcessing.ControlPdos().YesAnalysis()
-        #         if self.processing[i] == 'wfn':
-        #             action = DataProcessing.ControlWfn()
-        #         if self.processing[i] == 'charges and spins':
-        #             followupAns = followupQs[i]
-        #             if UserWants.AnalysisWants == 'n':
-        #                 Presentation.csvfile.turnFalse('charges_and_spins')
-        #             action = DataProcessing.ControlChargeSpins(followupAns)
+    @staticmethod
+    def CharSpinYes(followupAns):
+        action = DataProcessing.ControlChargeSpins(followupAns)
 
-    
-                # if self.processing[i] == 'geometry':
-                #     followupAns = followupQs[i].split(',')
-                #     defect_type = followupAns[0]
-                #     atomic_index = followupAns[1]
-                #     if defect_type == 'substitutional':
-                #         action = DataProcessing.SubstitutionalGeometry(atomic_index)
-                #     if defect_type == 'interstitional':
-                #         action = DataProcessing.InterstitionalGeometry(atomic_index)
-                #     if defect_type == 'vacancy':
-                #         action = DataProcessing.VacancyGeometry(atomic_index)
-                #     if defect_type == 'subs-vacancy complex':
-                #         action = DataProcessing.SubsVacancyGeometry(atomic_index)
-                #     if defect_type == 'inter-vacancy complex':
-                #         action = DataProcessing.InterVacancyGeometry(atomic_index)
-                # if self.processing[i] == 'band structure':
-                #     followupAns = int(followupQs[i])
-                #     if followupAns >= 8:
-                #         action = DataProcessing.bandstructureCP2K8()
-                #     elif followupAns < 8:
-                #         action = DataProcessing.bandstructureCP2K()
-                # if self.processing[i] == "work function":
-                #     e = 10 # processing .py file needs to be sorted out
-                # if self.processing[i] == 'IPR':
-                #     followupAns = followupQs[i]
-                #     if followupAns == 'y':
-                #         b = 8
-                #     elif followupAns == 'n':
-                #         b = 10
-    
-        #     if UserWants.AnalysisWants == 'n':
-        #         process_wants = []
-        #         for want in list(self.processing):
-        #             change = want.replace(' ', '_')
-        #             process_wants.append(change)
-        #
-        #
-        #         Presentation.Printing2CSV(self.processing, process_wants)
-        #
-        # elif UserWants.DisplayWants == 'y':
-        #     ProcessingControls.SavingOtherWants(self.processing, self.followupQs)
-        #     action = exec(open("../Presentation/GUI4data.py",'r'))
+    @staticmethod
+    def GeometryChosen(followupAns):
+        defect_type = followupAns[0]
+        atomic_index = followupAns[1]
+        action = DataProcessing.GeometryControl().GeometryAnalysisChosen(defect_type, atomic_index)
 
 

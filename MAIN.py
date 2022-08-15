@@ -34,6 +34,7 @@ class Start:
             perf_subdir = sys.argv[1]
             def_subdir = sys.argv[2]
             chem_pot_subdir = sys.argv[3]
+
             if sys.argv[4] == 'only':
                 self.keywrd = sys.argv[4]
                 if len(sys.argv) == 6:
@@ -43,7 +44,8 @@ class Start:
                     for i in range(5, len(sys.argv)):
                         n = sys.argv[i]
                         self.only.append(n)
-                Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir).OnlyStated(self.only)
+                Arguments = Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir)
+                Arguments.OnlyStated(self.only)
             elif sys.argv[4] == 'except':
                 self.keywrd = sys.argv[4]
                 if len(sys.argv) == 6:
@@ -53,7 +55,8 @@ class Start:
                     for i in range(5, len(sys.argv)):
                         n = sys.argv[i]
                         self.expt.append(n)
-                Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir).ExceptionStated(self.expt)
+                Arguments = Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir)
+                Arguments.ExceptionStated(self.expt)
             check = self.check_users_wants()
 
         else:
@@ -173,10 +176,13 @@ if __name__ =='__main__':
                 followupAns = Core.ProcessingControls.Followups[i]
                 followup_Ans = Core.ProcessingControls.Process_wants[i]
                 if Core.UserWants.AnalysisWants == 'n':
-                    pro3a = Process(target=Core.ProcessingControls.CharSpinNo(),args=(followupAns,followup_Ans,))
+                    pro3a = Process(target=Core.ProcessingControls.CharSpinNo(followupAns,followup_Ans))
                     pro3a.start()
                 if Core.UserWants.AnalysisWants == 'y':
-                    pro3b = Process(target=DataProcessing.ControlChargeSpins,args=(followupAns,))
+                    pro3b = Process(target=Core.ProcessingControls.CharSpinYes(followupAns))
                     pro3b.start()
-
+            if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
+                followupAns = Core.ProcessingControls.Followups[i].split(',')
+                pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
+                pro4.start()
 
