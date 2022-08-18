@@ -24,18 +24,12 @@ class ControlPdos:
         defpdossubdir, pdossuffixs = Extension().All_defect_subdir(".pdos", self.defectsub)
         [defectsubdir.append(x) for x in defpdossubdir if x not in defectsubdir]
         [defectsuffixs.append(y) for y in pdossuffixs if y not in defectsuffixs]
-        self.defsubdir = []
-        self.suffixs = []
+        self.defsubdir, self.suffixs = FromFile.OnlyNeutralWanted(defectsubdir, defectsuffixs).ReturnPaths()
         self.defpdos = []
         self.definp = []
-        for subdir, suffix in zip(list(defectsubdir), list(defectsuffixs)):
-            inpfile = Extension().files4defect(".inp", subdir)
-            pdosfile = Extension().files4defect(".pdos", subdir)
-            if FromFile.ChargeStateIdentification(inpfile).returnstate() == 0:
-                self.definp.append(inpfile)
-                self.defpdos.append(pdosfile)
-                self.defsubdir.append(subdir)
-                self.suffixs.append(suffix)
+        for subdir, suffix in zip(list(self.defsubdir), list(self.suffixs)):
+            self.defpdos.append(Extension().files4defect(".pdos", subdir))
+            self.definp.append(Extension().files4defect(".inp", subdir))
 
     def YesAnalysis(self):
         perfdatfiles = DataProcessing.PdosSmearedDatPlot(self.perfpdosfiles, self.perfsubdir, self.perfinpfile).CreateDatFile()

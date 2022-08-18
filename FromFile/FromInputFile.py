@@ -96,3 +96,46 @@ class OnlyNeutralWanted:
 class CheckSameCalculationSettings:
     def __init__(self, ref_input_file, check_input_file):
         print('tbd')
+
+class LatticeVectors:
+    look4 = '     &CELL'
+    def __init__(self, input_file):
+        self.A_lat_Vec = None
+        self.B_lat_Vec = None
+        self.C_lat_Vec = None
+        self.A = None
+        self.B = None
+        self.C = None
+        self.input_file = input_file
+
+    def search(self):
+        inp = open(self.input_file, 'r')
+        index = 0
+        for line in inp:
+            index += 1
+            if LatticeVectors.look4 in line:
+                CELL_line = index - 1
+                self.A_lat_Vec = CELL_line + 1
+                self.B_lat_Vec = CELL_line + 2
+                self.C_lat_Vec = CELL_line + 3
+                break
+        inp.close()
+        for l in 'A', 'B', 'C':
+            lines_to_read = eval("self.{}_lat_Vec".format(l))
+            inp = open(self.input_file, 'r')
+            for position, line in enumerate(inp):
+                if position == lines_to_read:
+                    strg = line
+                    exec(f'{l}_full_line_arr = strg.split()')
+                    if l == 'A':
+                        exec(f'{l}_full_line_arr.remove("A")')
+                        exec(f'self.A = [float(x) for x in {l}_full_line_arr]')
+                    elif l == 'B':
+                        exec(f'{l}_full_line_arr.remove("B")')
+                        exec(f'self.B = [float(x) for x in {l}_full_line_arr]')
+                    elif l == 'C':
+                        exec(f'{l}_full_line_arr.remove("C")')
+                        exec(f'self.C = [float(x) for x in {l}_full_line_arr]')
+            inp.close()
+
+        return self.A, self.B, self.C

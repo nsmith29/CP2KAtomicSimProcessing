@@ -2,6 +2,61 @@ import FromFile
 from Core import Extension
 
 # class to identify the number of atoms of each kind
+class perfLastXYZ:
+    def __init__(self, subdir):
+        self.subdir = subdir
+        lastxyz = Extension().perfect_subdir("-L.xyz", self.subdir)
+        if lastxyz == " ":
+            xyz_file = Extension().perfect_subdir(".xyz", self.subdir)
+            name_list = []
+            for i in range(len(xyz_file)):
+                letter = xyz_file[i]
+                name_list.append(letter)
+
+            with open(xyz_file) as f:
+                firstline = f.readline().rstrip()
+                self.tot_atoms = firstline.split()
+
+            self.total_atoms_in_calc = float(self.tot_atoms[0]) + 2
+            itr_start = []
+            L_itr_lines = []
+            file = open(xyz_file, 'r')
+            index = 0
+            for line in file:
+                index += 1
+                if firstline in line:
+                    j = index
+                    itr_start.append(j)
+            l = (itr_start[-1] - 1)
+            for n in range(0, int(self.total_atoms_in_calc)):
+                Lns = l + n
+                L_itr_lines.append(Lns)
+            file.close()
+
+            name_list[-5] = "L"
+            self.new_xyz_file = "".join(name_list)
+
+            file = open(xyz_file, 'r')
+            output_file = open(self.new_xyz_file, 'w')
+            for position, line in enumerate(file):
+                if position in L_itr_lines:
+                    string = line
+                    output_file.write(string)
+            output_file.close()
+            file.close()
+        else:
+            self.new_xyz_file = lastxyz
+
+            with open(self.new_xyz_file) as f:
+                firstline = f.readline().rstrip()
+                self.tot_atoms = firstline.split()
+
+            self.total_atoms_in_calc = float(self.tot_atoms[0]) + 2
+
+    def returnlastxyzname(self):
+        return self.new_xyz_file
+
+
 class LastXYZ:
     def __init__(self,subdir):
         self.subdir = subdir

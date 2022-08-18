@@ -1,3 +1,4 @@
-from Graphics.AtomSearch import atom_lookup
-from Graphics.wfn import WfnStructurePlotFrame, ScatterDataModifier
+from Graphics.PlotCharacteristics import atom_lookup, Colors
+from Graphics.WavefunctionQtframe import WfnStructurePlotFrame
+from Graphics.MayaviQWidget import MayaviWfnQWidget, Visualization
 from Graphics.MatlibplotQt import MplCanvas

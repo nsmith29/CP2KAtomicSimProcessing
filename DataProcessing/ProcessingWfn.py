@@ -4,7 +4,6 @@ import os
 import Core
 from PySide6.QtWidgets import QApplication
 import ase.io.cube as asecube
-from visvis.vvio.wavefront import WavefrontWriter
 import FromFile
 import DataProcessing
 import Presentation
@@ -14,16 +13,15 @@ import Graphics
 class ControlWfn:
     def __init__(self):
         DataProcessing.SetupWfnVars()
-
-        subdirs = DataProcessing.SetupWfnVars.listofdirs
-        suffixs = DataProcessing.SetupWfnVars.listofsufs
-        for subdir, suffix in zip(list(subdirs), suffixs):
+        DataProcessing.GeometryControl()
+        if not QApplication.instance():
             app = QApplication(sys.argv)
-            window = Presentation.MainWindowWfn(subdir, suffix)
-            window.show()
-            sys.exit(app.exec())
-            # DataProcessing.ReadingConvertingCube(suffix, subdir)
-            # break
+        else:
+            app = QApplication.instance()
+        window = Presentation.MainWindowWfn()
+        window.show()
+        sys.exit(app.exec())
+
 
 class SetupWfnVars:
     wfnDataStore = dict()
@@ -32,30 +30,20 @@ class SetupWfnVars:
 
     def __init__(self):
         self.defectsub = Core.UserArguments.DefectSubdir
-        self.wfnsubs = []
-        self.wfnsuffixs = []
         wfnsubs = []
         wfnsuffixs = []
         wfncubes, suffixs = Core.Extension().All_defect_subdir("_1-1_l.cube", self.defectsub)
         [wfnsubs.append(x) for x in wfncubes if x not in wfnsubs]
         [wfnsuffixs.append(y) for y in suffixs if y not in wfnsuffixs]
-        for subdir, suffix in zip(list(wfnsubs), list(wfnsuffixs)):
-            returndir, suf = self.OnlyNeutral(subdir, suffix)
-            self.wfnfilesdict(returndir, suf, self.defectsub)
+        self.wfnsubs, self.wfnsuffixs = FromFile.OnlyNeutralWanted(wfnsubs, wfnsuffixs).ReturnPaths()
+        for subdir, suffix in zip(list(self.wfnsubs), list(self.wfnsuffixs)):
+            self.wfnfilesdict(subdir, suffix, self.defectsub)
         self.Save(self.wfnsubs, self.wfnsuffixs)
-
-
-    def OnlyNeutral(self, subdir, suffix):
-        if FromFile.ChargeStateIdentification(Core.Extension().files4defect(".inp", subdir)).returnstate() == 0:
-            self.wfnsubs.append(subdir)
-            self.wfnsuffixs.append(suffix)
-            return subdir, suffix
 
     @classmethod
     def Save(cls, subdir, suffix):
         SetupWfnVars.listofdirs = subdir
         SetupWfnVars.listofsufs = suffix
-
 
     @classmethod
     def wfnfilesdict(cls, subdir, suffix, defectsub):
@@ -94,22 +82,6 @@ class SetupWfnVars:
                                 d["HOMO-1"] = HOMO_1file
             entry[str("{}".format(s))] = d
 
-        geometry = []
-        X, Y, Z = np.loadtxt(FromFile.LastXYZ(subdir).returnlastxyzname(),skiprows=2,  usecols=(1,2,3), unpack=True)
-        atoms = FromFile.LastXYZ(subdir).Name4Coordinate()
-        for i in range(len(atoms)):
-            index = i
-            atom = atoms[i]
-            x = X[i]
-            y = Y[i]
-            z = Z[i]
-            innerkeys = ["Index", "Name", "Xcoord", "Ycoord", "Zcoord"]
-            element = [index, atom, x, y, z]
-            sub = dict(zip(innerkeys, element))
-            geometry.append(sub)
-        entry["Geometry"] = geometry
-        SetupWfnVars.wfnDataStore[string] = entry
-
 class ReadingConvertingCube:
     def __init__(self, suffix, subdir):
         self.suffix = suffix
@@ -120,8 +92,11 @@ class ReadingConvertingCube:
         wfndir = asecube.read_cube(wfntest, read_data=True, program=None, verbose=False)
 
         wfnarray = wfndir['data']
+        print(type(wfnarray))
 
         filename = str(self.suffix + '.obj')
         filepath = os.path.join(self.subdir, filename)
 
-        WavefrontWriter.write(filepath, wfnarray, name='testwfn')
+        # pymesh.meshio.form_mesh(wfnarray,)
+
+        # WavefrontWriter.write(filepath, wfnarray, name='testwfn')

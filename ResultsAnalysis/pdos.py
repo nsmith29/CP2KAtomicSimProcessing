@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import FromFile
-import ResultsAnalysis
+import Graphics
 
 class plotpdos:
     def __init__(self, perfectfiles, perfectinput, defectfiles, defectinput, defectsubdir, suffix):
@@ -25,7 +25,7 @@ class plotpdos:
                     exec(f'self.perf_{kind}_{s}_energy = energy')
                     exec(f'self.perf_{kind}_{s}_density = density')
                     k = j + 1
-                    Color = ResultsAnalysis.Colors(k).getcolor()
+                    Color = Graphics.Colors(k).getcolor()
                     if s == "alpha":
                         ax.plot(eval("self.perf_{}_{}_energy".format(kind, s)),
                                 eval("self.perf_{}_{}_density".format(kind,s)),
@@ -42,7 +42,7 @@ class plotpdos:
                 if defdat.find(check) != -1:
                     kind = defkindatoms[j]
                     k = perfnumkinds + j + 1
-                    Color = ResultsAnalysis.Colors(k).getcolor()
+                    Color = Graphics.Colors(k).getcolor()
                     s, energy, density = self.plotvariables(defdat)
             if kind in perfkindatoms:
                 exec(f'self.{suffix}_{kind}_{s}_energy = energy')
