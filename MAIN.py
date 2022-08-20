@@ -2,8 +2,9 @@ import os
 import sys
 from multiprocessing import Process
 import Core
-import Presentation
+# import Presentation
 import DataProcessing
+import ResultsAnalysis
 
 os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
 
@@ -167,10 +168,10 @@ if __name__ =='__main__':
                     pro1a = Process(target=Core.ProcessingControls.PdosNo())
                     pro1a.start()
                 elif Core.UserWants.AnalysisWants == 'y':
-                    pro1b = Process(target=DataProcessing.ControlPdos().YesAnalysis())
+                    pro1b = Process(target=ResultsAnalysis.plotpdos) #DataProcessing.ControlPdos().YesAnalysis())
                     pro1b.start()
             if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
-                pro2 = Process(target=DataProcessing.ControlWfn())
+                pro2 = Process(target=DataProcessing.ControlWfn)
                 pro2.start()
             if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
                 followupAns = Core.ProcessingControls.Followups[i]

@@ -14,9 +14,9 @@ class Colors:
             'color10': "#EE3A8C"
         }
 
-    def getcolor(self):
-        colour = self.colordict.get(str("color{}".format(self.num)))
-        return colour
+    # def getcolor(self):
+        self.colour = self.colordict.get(str("color{}".format(self.num)))
+        # return colour
 
 class atom_lookup:
     def __init__(self, atom_name):

@@ -5,12 +5,12 @@ class NameOfProject:
     def __init__(self, input_file):
         self.input_file = input_file
 
-    def ReturnName(self):
+    # def ReturnName(self):
         with open(self.input_file) as inp:
             name = inp.readlines()[2].split()
-            project_name = name[-1]
+            self.project_name = name[-1]
 
-        return project_name
+        # return project_name
 
 class Kinds:
     kind = '     &KIND'
@@ -19,7 +19,7 @@ class Kinds:
         self.included_atoms = []
         self.input_file = input_file
 
-    def searchingfile(self):
+    # def searchingfile(self):
         inp = open(self.input_file, 'r')
         index = 0
         for line in inp:
@@ -29,7 +29,7 @@ class Kinds:
                 self.inpkindline.append(kindln)
         inp.close()
 
-        num_kinds = len(self.inpkindline)  # len() returns the num elements in a list - = to num of kinds in structure
+        self.num_kinds = len(self.inpkindline)  # len() returns the num elements in a list - = to num of kinds in structure
 
         inp = open(self.input_file, 'r')
         for position, line in enumerate(inp):
@@ -39,24 +39,13 @@ class Kinds:
                 self.included_atoms.append(atom)
         inp.close()
 
-        return num_kinds, self.included_atoms
+        # return num_kinds, self.included_atoms
 
-class ChargeStateIdentification:
-    chargekw = "     CHARGE"
+class chargecheck:
     def __init__(self, input_file):
-        self.input_file = input_file
         self.chargeline = ''
         self.check = False
-
-        if self.chargecheck():
-            self.state = self.getchargestate()
-        else:
-            self.state = 0  # no charge keyword in inp, charge set to default neutral
-
-        self.returnstate()
-
-    def chargecheck(self):
-        file = open(self.input_file, 'r')
+        file = open(input_file, 'r')
         index = 0
         for line in file:
             index += 1
@@ -65,18 +54,25 @@ class ChargeStateIdentification:
                 self.chargeline = index - 1
                 break
 
-        return self.check
-
-    def getchargestate(self):
-        file = open(self.input_file, 'r')
+class getchargestate:
+    def __init__(self, input_file, chargeline):
+        self.charge = None
+        file = open(input_file, 'r')
         for position, line in enumerate(file):
-            if position == self.chargeline:
+            if position == chargeline:
                 strg = line.split()
-                charge = strg[-1]
-                return charge
+                self.charge = strg[-1]
 
-    def returnstate(self):
-        return int(self.state)
+class ChargeStateIdentification(chargecheck, getchargestate):
+    chargekw = "     CHARGE"
+    def __init__(self, input_file):
+        self.input_file = input_file
+        chargecheck.__init__(self, self.input_file)
+        if self.check is True:
+            getchargestate.__init__(self, self.input_file, self.chargeline)
+            self.state = self.charge
+        else:
+            self.state = 0  # no charge keyword in inp, charge set to default neutral
 
 class OnlyNeutralWanted:
     def __init__(self, all_subdirs, all_suffixs):
@@ -86,12 +82,11 @@ class OnlyNeutralWanted:
         self.subdirs = []
         self.suffixs = []
 
-    def ReturnPaths(self):
         for subdir, suffix in zip(list(self.allsubdirs), list(self.allsuffixs)):
             if FromFile.ChargeStateIdentification(Core.Extension().files4defect(".inp", subdir)).returnstate() == 0:
                 self.subdirs.append(subdir)
                 self.suffixs.append(suffix)
-        return self.subdirs, self.suffixs
+        # return self.subdirs, self.suffixs
 
 class CheckSameCalculationSettings:
     def __init__(self, ref_input_file, check_input_file):

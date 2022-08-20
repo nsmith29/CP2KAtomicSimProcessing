@@ -5,37 +5,50 @@ import FromFile
 import Presentation
 from Core import Extension
 
-class ControlChargeSpins:
-    charges_and_spinsData = dict()
-    Indices = []
-    def __init__(self, answers):
-        self.indices = answers.split(',')
-
-        if Core.UserWants.AnalysisWants == 'n':
-            self.SaveIndices(self.indices)
-
+class SetupChargeSpins(FromFile.ReturnProjectNames):
+    def __init__(self):
         self.perfsubdir = Core.UserArguments.PerfectSubdir
         self.perffile = Extension().perfect_subdir(".log", self.perfsubdir)
 
-        self.CreateDictionary(self.perfsubdir, self.perffile, self.indices)
-
         self.defectsub = Core.UserArguments.DefectSubdir
         self.defsubdirs, self.defsuffixs = Extension().All_defect_subdir(".log", self.defectsub)
+        FromFile.ReturnProjectNames.__init__(self, self.defsubdirs) #self.defneutral[logfiles], self.neutralsubdir[subdir], self.inpneutral[subdir], self.namesneutral[project_name]
 
-        self.projectnames = FromFile.SortingChargeStates(self.defsubdirs).returnprojectnames()
+class PerfChargeSpins(SetupChargeSpins, FromFile.GetChargesSpins):
+    def __init__(self, indices):
+        self.indices = indices.split(',')
+        SetupChargeSpins.__init__(self)
+        for index in self.indices:
+            FromFile.GetChargesSpins.__init__(self,self.perffile,index)
+            for n in 1, 2:
+                exec(f'self.perf{index}_pop{n}_charge = self.pop{n}_charge')
+                exec(f'self.perf{index}_pop{n}_spin = self.pop{n}_spin')
+                exec(f'self.perf{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
+                exec(f'self.perf{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
 
-        if Core.UserWants.AnalysisWants == 'n':
-            Presentation.csvfile.ChargeDirectory()
-            Presentation.csvfile.turnTrue("charges_and_spins")
+class ControlChargeSpins(PerfChargeSpins):
+    charges_and_spinsData = dict()
+    Indices = []
+    def __init__(self, answers):
+        PerfChargeSpins.__init__(self, answers)
 
-        for name in list(self.projectnames):
-            self.CreateDictionary(name, 'blank', self.indices)
 
-        self.CreateDataFrame4Results()
+        self.CreateDictionary(self.perfsubdir, self.perffile, self.indices)
 
-    @classmethod
-    def  SaveIndices(cls, indices):
-        ControlChargeSpins.Indices = indices
+        # self.defectsub = Core.UserArguments.DefectSubdir
+        # self.defsubdirs, self.defsuffixs = Extension().All_defect_subdir(".log", self.defectsub)
+        #
+        # self.projectnames = FromFile.SortingChargeStates(self.defsubdirs).returnprojectnames()
+        #
+        # if Core.UserWants.AnalysisWants == 'n':
+        #     Presentation.csvfile.ChargeDirectory()
+        #     Presentation.csvfile.turnTrue("charges_and_spins")
+        #
+        # for name in list(self.projectnames):
+        #     self.CreateDictionary(name, 'blank', self.indices)
+        #
+        # self.CreateDataFrame4Results()
+
 
     @classmethod
     def CreateDictionary(cls, projectname, filename, indices):
@@ -46,8 +59,8 @@ class ControlChargeSpins:
             atomindex = dict()
             if projectname == Core.UserArguments.PerfectSubdir:
                 pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(filename, index).returnchargespins()
-            else:
-                pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring]["0"]["logfile"],index).returnchargespins()
+            # else:
+            #     pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring]["0"]["logfile"],index).returnchargespins()
             atom = []
             innerkeys = ["Method", "spin", "charge", "pop a", "pop b"]
             method1 = ["Mulliken", pop1spin, pop1charge, pop1popA, pop1popB]
@@ -60,30 +73,30 @@ class ControlChargeSpins:
             atomindex[index] = atom
             neutral.append(atomindex)
         entry["0"] = neutral
-        if projectname != Core.UserArguments.PerfectSubdir:
-            Arrneg1 = []
-            Arrneg2 = []
-            Arrneg3 = []
-            Arrpos1 = []
-            Arrpos2 = []
-            Arrpos3 = []
-            for state, key in zip(('neg1', 'neg2', 'neg3', 'pos1', 'pos2', 'pos3'), ("-1","-2","-3","1","2","3")):
-                if FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))] != '-':
-                    for index in list(indices):
-                        atomindex = dict()
-                        atom = []
-                        pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))],index).returnchargespins()
-                        innerkeys = ["Method", "spin", "charge", "pop a", "pop b"]
-                        method1 = ["Mulliken", pop1spin, pop1charge, pop1popA, pop1popB]
-                        method2 = ["Hirshfield", pop2spin, pop2charge, pop2popA, pop2popB]
-
-                        method1dict = dict(zip(innerkeys, method1))
-                        method2dict = dict(zip(innerkeys, method2))
-                        atom.append(method1dict)
-                        atom.append(method2dict)
-                        atomindex[index] = atom
-                        exec(f'Arr{state}.append(atomindex)')
-                    entry[str("{}".format(key))] = eval("Arr{}".format(state))
+        # if projectname != Core.UserArguments.PerfectSubdir:
+        #     Arrneg1 = []
+        #     Arrneg2 = []
+        #     Arrneg3 = []
+        #     Arrpos1 = []
+        #     Arrpos2 = []
+        #     Arrpos3 = []
+        #     for state, key in zip(('neg1', 'neg2', 'neg3', 'pos1', 'pos2', 'pos3'), ("-1","-2","-3","1","2","3")):
+        #         if FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))] != '-':
+        #             for index in list(indices):
+        #                 atomindex = dict()
+        #                 atom = []
+        #                 pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))],index).returnchargespins()
+        #                 innerkeys = ["Method", "spin", "charge", "pop a", "pop b"]
+        #                 method1 = ["Mulliken", pop1spin, pop1charge, pop1popA, pop1popB]
+        #                 method2 = ["Hirshfield", pop2spin, pop2charge, pop2popA, pop2popB]
+        #
+        #                 method1dict = dict(zip(innerkeys, method1))
+        #                 method2dict = dict(zip(innerkeys, method2))
+        #                 atom.append(method1dict)
+        #                 atom.append(method2dict)
+        #                 atomindex[index] = atom
+        #                 exec(f'Arr{state}.append(atomindex)')
+        #             entry[str("{}".format(key))] = eval("Arr{}".format(state))
         ControlChargeSpins.charges_and_spinsData[projectstring] = entry
 
     def CreateDataFrame4Results(self):

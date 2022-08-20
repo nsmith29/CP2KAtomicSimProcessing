@@ -82,6 +82,7 @@ class ProcessingControls:
     def GeometryChosen(followupAns):
         defect_type = followupAns[0]
         atomic_index = followupAns[1]
-        action = DataProcessing.GeometryControl().GeometryAnalysisChosen(defect_type, atomic_index)
+        if defect_type == 'substitutional':
+            action = DataProcessing.SubstitutionalGeometryDisplacement(atomic_index)
 
 

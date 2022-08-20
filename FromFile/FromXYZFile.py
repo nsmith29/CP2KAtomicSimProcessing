@@ -108,14 +108,16 @@ class LastXYZ:
 
             self.total_atoms_in_calc = float(self.tot_atoms[0]) + 2
 
-    def returnlastxyzname(self):
-        return self.new_xyz_file
+    # def returnlastxyzname(self):
+    #     return self.new_xyz_file
+    #
+    # def returntotalatoms(self):
+    #     return self.tot_atoms
 
-    def returntotalatoms(self):
-        return self.tot_atoms
-
-    def Name4Coordinate(self):
-        atoms = []
+class Name4Coordinate(LastXYZ):
+    def __init__(self):
+        LastXYZ.__init__(self,self.subdir)
+        self.atoms = []
         i_lines = []
 
         file = open(self.new_xyz_file, 'r')
@@ -125,25 +127,25 @@ class LastXYZ:
             if position in i_lines:
                 strg = line.split()
                 name = strg[0]
-                atoms.append(name)
+                self.atoms.append(name)
 
-        return atoms
+        # return atoms
 
 
-class NumTotAtomsOfKind:
+class NumTotAtomsOfKind(LastXYZ):
     def __init__(self, subdir, kinds, num):
         self.subdir = subdir
         self.kinds = kinds
         self.num = num
 
-        self.atoms4kind = self.GetNumOfEachKind()
-
-    def GetNumOfEachKind(self):
-        xyzfile = FromFile.LastXYZ(self.subdir).returnlastxyzname()
-        atoms4kind = []
+        self.atoms4kind = []#self.GetNumOfEachKind()
+        LastXYZ.__init__(self,self.subdir)
+    # def GetNumOfEachKind(self):
+    #     xyzfile = FromFile.LastXYZ(self.subdir).returnlastxyzname()
+        # atoms4kind = []
         for i in range(0, int(self.num)):
             find = self.kinds[i]
-            file = open(xyzfile, 'r')
+            file = open(self.new_xyz_file, 'r')
             index = 0
             count = 0
             for line in file:
@@ -151,11 +153,12 @@ class NumTotAtomsOfKind:
                 if find in line:
                     count += 1
             file.close()
-            atoms4kind.append(count)
+            self.atoms4kind.append(count)
 
-        return atoms4kind
-
-    def PdosScalingFactor(self, specifickind):
+        # return atoms4kind
+class PdosScalingFactor(NumTotAtomsOfKind):
+    def __init__(self, subdir, kinds, num, specifickind):
+        NumTotAtomsOfKind.__init__(self, subdir, kinds, num)
         kindAnum = 0
         for i in range(0, int(self.num)):
             if self.kinds[i] != specifickind:
@@ -169,7 +172,7 @@ class NumTotAtomsOfKind:
                 index = i
         specific_number = self.atoms4kind[index]
 
-        scalingfactor = 50 * round((kindAnum - specific_number)/50)
+        self.scalingfactor = 50 * round((kindAnum - specific_number)/50)
 
-        return scalingfactor
+        # return scalingfactor
 
