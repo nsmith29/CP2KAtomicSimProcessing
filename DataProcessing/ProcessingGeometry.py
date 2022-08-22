@@ -1,8 +1,8 @@
 import Core
 import FromFile
 import DataProcessing
-import Presentation
-import Graphics
+# import Presentation
+# import Graphics
 import numpy as np
 
 class SetUpGeometry:

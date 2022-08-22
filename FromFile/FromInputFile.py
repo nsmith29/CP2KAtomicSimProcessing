@@ -74,7 +74,7 @@ class ChargeStateIdentification(chargecheck, getchargestate):
         else:
             self.state = 0  # no charge keyword in inp, charge set to default neutral
 
-class OnlyNeutralWanted:
+class OnlyNeutralWanted(ChargeStateIdentification):
     def __init__(self, all_subdirs, all_suffixs):
         self.allsubdirs = all_subdirs
         self.allsuffixs = all_suffixs
@@ -83,14 +83,65 @@ class OnlyNeutralWanted:
         self.suffixs = []
 
         for subdir, suffix in zip(list(self.allsubdirs), list(self.allsuffixs)):
-            if FromFile.ChargeStateIdentification(Core.Extension().files4defect(".inp", subdir)).returnstate() == 0:
+            ChargeStateIdentification.__init__(self, Core.Extension().files4defect(".inp", subdir))
+            if self.state == 0:
                 self.subdirs.append(subdir)
                 self.suffixs.append(suffix)
         # return self.subdirs, self.suffixs
 
 class CheckSameCalculationSettings:
+    xc = 'XC'
+    ADMM = 'AUXILIARY_DENSITY_MATRIX_METHOD'
+
     def __init__(self, ref_input_file, check_input_file):
-        print('tbd')
+        checklines1 = []
+        checklines2 = []
+        self.check = None
+        with open(ref_input_file, 'r') as file1:
+            lines = file1.read()
+            globlines = lines[lines.find('&GLOBAL'):lines.find('&END GLOBAL')]
+            checklines1.append(globlines)
+            GEOOPT = lines[lines.find('&GEO_OPT'):lines.find('&END GEO_OPT')]
+            checklines1.append(GEOOPT)
+            CELLOPT = lines[lines.find('&CELL_OPT'):lines.find('&END CELL_OPT')]
+            checklines1.append(CELLOPT)
+            scflines = lines[lines.find('&SCF'):lines.find('&END SCF')]
+            checklines1.append(scflines)
+            qslines = lines[lines.find('&QS'):lines.find('&END QS')]
+            checklines1.append(qslines)
+            mgridlines = lines[lines.find('&MGRID'):lines.find('&END MGRID')]
+            checklines1.append(mgridlines)
+            xclines = lines[lines.find('&XC'):lines.find('&END XC')]
+            checklines1.append(xclines)
+            ADMMlines = lines[lines.find('&AUXILIARY_DENSITY_MATRIX_METHOD'):lines.find('&END AUXILIARY_DENSITY_MATRIX_METHOD')]
+            checklines1.append(ADMMlines)
+        found = []
+        with open(check_input_file, 'r') as file2:
+            lines = file2.read()
+            globlines = lines[lines.find('&GLOBAL'):lines.find('&END GLOBAL')]
+            checklines2.append(globlines)
+            GEOOPT = lines[lines.find('&GEO_OPT'):lines.find('&END GEO_OPT')]
+            checklines2.append(GEOOPT)
+            CELLOPT = lines[lines.find('&CELL_OPT'):lines.find('&END CELL_OPT')]
+            checklines2.append(CELLOPT)
+            scflines = lines[lines.find('&SCF'):lines.find('&END SCF')]
+            checklines2.append(scflines)
+            qslines = lines[lines.find('&QS'):lines.find('&END QS')]
+            checklines2.append(qslines)
+            mgridlines = lines[lines.find('&MGRID'):lines.find('&END MGRID')]
+            checklines2.append(mgridlines)
+            xclines = lines[lines.find('&XC'):lines.find('&END XC')]
+            checklines2.append(xclines)
+            ADMMlines = lines[lines.find('&AUXILIARY_DENSITY_MATRIX_METHOD'):lines.find(
+                '&END AUXILIARY_DENSITY_MATRIX_METHOD')]
+            checklines2.append(ADMMlines)
+            for check1, check2 in zip(list(checklines1), list(checklines2)):
+                if check1 == check2:
+                    found.append('+')
+        if len(found) == len(checklines1):
+            self.check = True
+        else:
+            self.check = False
 
 class LatticeVectors:
     look4 = '     &CELL'

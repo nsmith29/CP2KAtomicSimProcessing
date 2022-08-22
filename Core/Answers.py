@@ -1,5 +1,5 @@
 import DataProcessing
-import Presentation
+# import Presentation
 
 class UserArguments:
     PerfectSubdir = ''
@@ -60,19 +60,19 @@ class ProcessingControls:
             change = want.replace(' ', '_')
             process_wants.append(change)
 
-        ProcessingControls.ProcessingWants = processing.split(', ')
+        ProcessingControls.ProcessingWants = processing
         ProcessingControls.Followups = followupQs
         ProcessingControls.Process_wants = process_wants
 
-    @staticmethod
-    def PdosNo():
-        Presentation.csvfile.turnFalse('pdos')
-        action = DataProcessing.ControlPdos().NoAnalysis()
-
-    @staticmethod
-    def CharSpinNo(followupAns, followup_Ans):
-        Presentation.csvfile.turnFalse(followup_Ans)
-        action = DataProcessing.ControlChargeSpins(followupAns)
+    # @staticmethod
+    # def PdosNo():
+    #     Presentation.csvfile.turnFalse('pdos')
+    #     action = DataProcessing.ControlPdos().NoAnalysis()
+    #
+    # @staticmethod
+    # def CharSpinNo(followupAns, followup_Ans):
+    #     Presentation.csvfile.turnFalse(followup_Ans)
+    #     action = DataProcessing.ControlChargeSpins(followupAns)
 
     @staticmethod
     def CharSpinYes(followupAns):

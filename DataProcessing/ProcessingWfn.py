@@ -3,11 +3,10 @@ import numpy as np
 import os
 import Core
 from PySide6.QtWidgets import QApplication
-import ase.io.cube as asecube
 import FromFile
 import DataProcessing
-import Presentation
-import Graphics
+# from Presentation import MainWindowWfn
+# import Graphics
 
 
 class ControlWfn:
@@ -18,8 +17,8 @@ class ControlWfn:
             app = QApplication(sys.argv)
         else:
             app = QApplication.instance()
-        window = Presentation.MainWindowWfn()
-        window.show()
+        # window = MainWindowWfn()
+        # window.show()
         sys.exit(app.exec())
 
 

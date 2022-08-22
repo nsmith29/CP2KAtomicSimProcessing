@@ -5,7 +5,7 @@ import os
 # import DataProcessing
 import FromFile
 import Core
-import Presentation
+# import Presentation
 from Core import Extension
 
 class SetUpPdos(FromFile.OnlyNeutralWanted):
@@ -20,7 +20,7 @@ class SetUpPdos(FromFile.OnlyNeutralWanted):
         defpdossubdir, pdossuffixs = Extension().All_defect_subdir(".pdos", self.defectsub)
         [defectsubdir.append(x) for x in defpdossubdir if x not in defectsubdir]
         [defectsuffixs.append(y) for y in pdossuffixs if y not in defectsuffixs]
-        FromFile.OnlyNeutralWanted.__init__(self,defectsubdir, defectsuffixs)
+        FromFile.OnlyNeutralWanted.__init__(self, defectsubdir, defectsuffixs)
         self.defpdos = []
         self.definp = []
         for subdir, suffix in zip(list(self.subdirs), list(self.suffixs)):
@@ -89,7 +89,7 @@ class PdosSmearedDatPlot(FromFile.Kinds, pdos, smearing):
         self.pdosfiles = pdosfiles
         self.subdir = subdir
         self.inputfile = inputfile
-        FromFile.Kinds.__init__(self,self.inputfile)
+        FromFile.Kinds.__init__(self, self.inputfile)
 
         self.dat_files = []
         for k in range(0, int(self.num_kinds)):
@@ -201,18 +201,19 @@ class NoAnalysisPerfect(SetUpPdos, PdosMOprocessing):
 
 
 class NoAnalysisDefects(SetUpPdos, PdosMOprocessing):# <<<<---------------
-    def __init__(self,): #self.defpdos
+    def __init__(self, pdosfiles): #self.defpdos
         SetUpPdos.__init__(self)
-        PdosMOprocessing.__init__(self, )
-        for defpdosfile, suffix in zip(list(self.defpdos), list(self.suffixs)):
-            exec(
-                f'{suffix}_HOMO_alpha, {suffix}_LUMO_alpha, {suffix}_HOMO_beta, {suffix}'
-                f'_LUMO_beta = PdosMOprocessing(defpdosfile).ReturningMO()')
-            exec(f'{suffix}_alpha_diff = round(({suffix}_LUMO_alpha - {suffix}_HOMO_alpha),4)')
-            exec(f'{suffix}_beta_diff = round(({suffix}_LUMO_beta - {suffix}_HOMO_beta),4)')
-            for s in 'alpha', 'beta':
-                exec(f'{suffix}_HOMO_{s} = round({suffix}_HOMO_{s},4)')
-                exec(f'{suffix}_LUMO_{s} = round({suffix}_LUMO_{s},4)')
+        PdosMOprocessing.__init__(self, pdosfiles)
+        self.defHOMO_alpha = self.HOMO_alpha
+        self.defLUMO_alpha = self.LUMO_alpha
+        self.defHOMO_beta = self.HOMO_beta
+        self.defLUMO_beta = self.LUMO_beta
+
+        self.defalpha_diff = round((self.defLUMO_alpha - self.defHOMO_alpha),4)
+        self.defbeta_diff = round((self.defLUMO_beta - self.defHOMO_beta),4)
+        for s in 'alpha', 'beta':
+            exec(f'self.defHOMO_{s} = round(self.defHOMO_{s},4)')
+            exec(f'self.defLUMO_{s} = round(self.defLUMO_{s},4)')
             # Presentation.csvfile.PdosDirectory(suffix, eval("{}_HOMO_alpha".format(suffix)), eval("{}_LUMO_alpha".format(suffix)),
             #                                    eval("{}_alpha_diff".format(suffix)), eval("{}_HOMO_beta".format(suffix)),
             #                                    eval("{}_LUMO_beta".format(suffix)), eval("{}_beta_diff".format(suffix)))

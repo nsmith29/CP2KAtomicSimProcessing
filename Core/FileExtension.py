@@ -52,16 +52,16 @@ class Extension:
                         if type(Core.UserArguments.OnlyDir) == list:
                             if any(elem in path for elem in Core.UserArguments.OnlyDir):
                                 if entry.name.endswith(file_extension):
-                                    subsubdirs.append(path)
+                                    subsubdirs.append(dwd)
                                     var_suffix.append(path.replace('/', '_'))
                         else:
                             if path.find(Core.UserArguments.OnlyDir) != -1:
                                 if entry.name.endswith(file_extension):
-                                    subsubdirs.append(path)
+                                    subsubdirs.append(dwd)
                                     var_suffix.append(path.replace('/', '_'))
                     elif Core.UserArguments.Only is False:
                         if entry.name.endswith(file_extension):
-                            subsubdirs.append(path)
+                            subsubdirs.append(dwd)
                             var_suffix.append(path.replace('/', '_'))
         return subsubdirs, var_suffix
 

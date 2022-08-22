@@ -3,5 +3,5 @@ from FromFile.FromInputFile import Kinds, ChargeStateIdentification, NameOfProje
     CheckSameCalculationSettings, LatticeVectors, chargecheck, getchargestate
 from FromFile.FromXYZFile import LastXYZ, NumTotAtomsOfKind, perfLastXYZ, PdosScalingFactor
 from FromFile.FromLogFile import GetChargesSpins
-from FromFile.ChargeStates4Projects import SetupSortingNeutral, ReturnProjectNames, SetupSortingCharged, SortingChargeStates, \
+from FromFile.ChargeStates4Projects import SetupSortingNeutral, ReturnProjectNames, SetupSortingCharged, \
     ProjectSortingIt, CategorisingChargeStates
