@@ -2,6 +2,7 @@ import os
 import sys
 import multiprocessing as mp
 import Core
+import GUIwidgets
 import Presentation
 import DataProcessing
 import ResultsAnalysis
@@ -81,9 +82,9 @@ class Start:
             f"{bcolors.ENDC}, {bcolors.BOLD}IPR{bcolors.ENDC}, {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn"
             f"{bcolors.ENDC}, {bcolors.BOLD}work function{bcolors.ENDC} : ")
         while all(x not in processing for x in ["wfn", "geometry", "band structure", "work function", "IPR", "pdos",
-                               "charges and spin", "charge transition levels"]):
+                               "charges and spin", "charge transition levels", "test"]):
             print(f"{bcolors.FAIL}Error! {bcolors.WARNING}Invalid results type stated, valid methods to choose from "
-                  f"include:{bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges and spins{bcolors.ENDC},"
+                  f"include:{bcolors.ENDC}{bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges and spins{bcolors.ENDC},"
             f"{bcolors.BOLD}charge transition levels{bcolors.ENDC}, {bcolors.BOLD}geometry{bcolors.ENDC}, {bcolors.BOLD}"
                   f"IPR{bcolors.ENDC}, "
             f" {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn{bcolors.ENDC}, {bcolors.BOLD}work function"
@@ -179,6 +180,9 @@ if __name__ =='__main__':
             pro.start()
         else:
             for i in range(len(Core.ProcessingControls.ProcessingWants)):
+                if Core.ProcessingControls.ProcessingWants[i] == 'test':
+                    pro0 = Process(target=GUIwidgets.TestingGeometry())
+                    pro0.start()
                 if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
                     pro1 = Process(target=ResultsAnalysis.plotpdos()) #
                     pro1.start()
@@ -191,8 +195,10 @@ if __name__ =='__main__':
                     pro3 = Process(target=Core.ProcessingControls.CharSpinYes(followupAns))
                     pro3.start()
                 if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
-                    followupAns = Core.ProcessingControls.Followups[i].split(',')
-                    pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
+                    pro4 = Process(target=Presentation.geometryGUI())
                     pro4.start()
+                    # followupAns = Core.ProcessingControls.Followups[i].split(',')
+                    # pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
+                    # pro4.start()
 
 
