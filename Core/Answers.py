@@ -64,16 +64,6 @@ class ProcessingControls:
         ProcessingControls.Followups = followupQs
         ProcessingControls.Process_wants = process_wants
 
-    # @staticmethod
-    # def PdosNo():
-    #     Presentation.csvfile.turnFalse('pdos')
-    #     action = DataProcessing.ControlPdos().NoAnalysis()
-    #
-    # @staticmethod
-    # def CharSpinNo(followupAns, followup_Ans):
-    #     Presentation.csvfile.turnFalse(followup_Ans)
-    #     action = DataProcessing.ControlChargeSpins(followupAns)
-
     @staticmethod
     def CharSpinYes(followupAns):
         action = DataProcessing.ControlChargeSpins(followupAns)

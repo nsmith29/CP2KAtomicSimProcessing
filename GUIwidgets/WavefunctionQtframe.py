@@ -1,5 +1,4 @@
-import Graphics
-import DataProcessing
+import GUIwidgets
 from PySide6.QtWidgets import *
 from pyface.qt import QtGui
 from PySide6.QtCore import Qt
@@ -22,12 +21,8 @@ class WfnStructurePlotFrame(QtGui.QWidget):
         self.Tree4WfnSettings()
         self.setLayout(self.layout)
 
-    def AddWfnContainer(self, suffix):
-        subdir = None
-        for i in range(len(DataProcessing.SetupWfnVars.listofsufs)):
-            if suffix == DataProcessing.SetupWfnVars.listofsufs[i]:
-                subdir = DataProcessing.SetupWfnVars.listofdirs[i]
-        wfn_container = Graphics.MayaviWfnQWidget(suffix, subdir, self)
+    def AddWfnContainer(self, suffix, subdir):
+        wfn_container = GUIwidgets.MayaviWfnQWidget(suffix, subdir, self)
         self.layout.addWidget(wfn_container, 1, 1, 16, 17)
 
     def Button4neighours(self):

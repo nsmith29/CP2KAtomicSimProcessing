@@ -5,7 +5,7 @@ import DataProcessing
 # import Graphics
 import numpy as np
 
-class SetUpGeometry:
+class SetUpGeometry(FromFile.OnlyNeutralWanted):
     def __init__(self):
         self.defectsub = Core.UserArguments.DefectSubdir
         subs = []
@@ -16,23 +16,24 @@ class SetUpGeometry:
             allsubs, allsuffixs = Core.Extension().All_defect_subdir(".xyz",self.defectsub)
         [subs.append(x) for x in allsubs if x not in subs]
         [suffixs.append(y) for y in allsuffixs if y not in suffixs]
-        self.subs, self.suffixs = FromFile.OnlyNeutralWanted(subs, suffixs).ReturnPaths()
+        FromFile.OnlyNeutralWanted.__init__(self, subs, suffixs)
 
 
-class DefectDictionary(SetUpGeometry):
+class DefectDictionary(SetUpGeometry, FromFile.Name4Coordinate, FromFile.LastXYZ):
     geometryDataStore = dict()
     def __init__(self):
         SetUpGeometry.__init__(self)
-        for subdir, suffix in zip(list(self.subs), list(self.suffixs)):
-            self.Create(subdir, suffix)
+        for subdir, suffix in zip(list(self.subdirs), list(self.suffixs)):
+            FromFile.LastXYZ.__init__(self, subdir)
+            X, Y, Z = np.loadtxt(self.new_xyz_file, skiprows=2, usecols=(1, 2, 3), unpack=True)
+            FromFile.Name4Coordinate.__init__(self,subdir)
+            self.Create(suffix, X, Y, Z, self.atoms)
 
     @classmethod
-    def Create(cls, subdir, suffix):
+    def Create(cls, suffix, X, Y, Z, atoms):
         entry = dict()
         string = str(suffix)
         geometry = []
-        X, Y, Z = np.loadtxt(FromFile.LastXYZ(subdir).returnlastxyzname(), skiprows=2, usecols=(1, 2, 3), unpack=True)
-        atoms = FromFile.LastXYZ(subdir).Name4Coordinate()
         for i in range(len(atoms)):
             index = i
             atom = atoms[i]
@@ -46,14 +47,10 @@ class DefectDictionary(SetUpGeometry):
         entry["Geometry"] = geometry
         DefectDictionary.geometryDataStore[string] = entry
 
-    # def GeometryAnalysisChosen(self, defect_type, atom_index):
-    #     DataProcessing.perfectDirectory.Create()
-    #     if defect_type == 'substitutional':
-    #         DataProcessing.SubstitutionalGeometryDisplacement(atom_index, self.subs, self.suffixs)
-
-class FetchGeometryFromDefectDictionary:
+class FetchGeometryFromDefectDictionary(DefectDictionary):
     def __init__(self, suffix):
         self.suffix = suffix
+        DefectDictionary.__init__(self)
         self.atoms = []
         self.X = []
         self.Y = []
@@ -75,19 +72,20 @@ class FetchGeometryFromDefectDictionary:
         self.Y = np.asarray(self.Y)
         self.Z = np.asarray(self.Z)
 
-class perfectDirectory:
+class perfectDirectory(FromFile.perfName4Coordinate, FromFile.perfLastXYZ):
     perfectDataStore = dict()
     def __init__(self):
-        self.CreatePerf()
+        self.perfsubdir = Core.UserArguments.PerfectSubdir
+        FromFile.perfLastXYZ.__init__(self, self.perfsubdir)
+        X, Y, Z = np.loadtxt(self.new_xyz_file, skiprows=2, usecols=(1, 2, 3), unpack=True)
+        FromFile.perfName4Coordinate.__init__(self, self.perfsubdir)
+        self.CreatePerf(self.perfsubdir, X, Y, Z, self.atoms)
 
     @classmethod
-    def CreatePerf(cls):
-        perfsubdir = Core.UserArguments.PerfectSubdir
+    def CreatePerf(cls, perfsubdir, X, Y, Z, atoms):
         entry = dict()
         string = str(perfsubdir)
         geometry = []
-        X, Y, Z = np.loadtxt(FromFile.perfLastXYZ(perfsubdir).returnlastxyzname(), skiprows=2, usecols=(1, 2, 3), unpack=True)
-        atoms = FromFile.LastXYZ(perfsubdir).Name4Coordinate()
         for i in range(len(atoms)):
             index = i
             atom = atoms[i]
@@ -101,8 +99,9 @@ class perfectDirectory:
         entry["Geometry"] = geometry
         perfectDirectory.perfectDataStore[string] = entry
 
-class FetchGeometryFromPerfectDictionary:
+class FetchGeometryFromPerfectDictionary(perfectDirectory):
     def __init__(self):
+        perfectDirectory.__init__(self)
         self.perfatoms = []
         self.perfX = []
         self.perfY = []
@@ -122,12 +121,25 @@ class FetchGeometryFromPerfectDictionary:
         self.perfY = np.asarray(self.perfY)
         self.perfZ = np.asarray(self.perfZ)
 
-class SubstitutionalGeometryDisplacement(DefectDictionary, perfectDirectory, FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary):
+class DifferenceInPosition:
+    def __init__(self, perfX, X, defectX, perfY, Y, defectY, perfZ, Z, defectZ):
+        self.diff_X = perfX - X
+        self.dist_X= defectX - X
+        self.diff_Y = perfY - Y
+        self.dist_Y = defectY - Y
+        self.diff_Z = perfZ - Z
+        self.dist_Z = defectZ - Z
+
+        self.tot_displacement = np.sqrt(self.diff_X**2 + self.diff_Y**2 + self.diff_Z**2)
+        self.tot_distance = np.sqrt(self.dist_X**2 + self.dist_Y**2 + self.dist_Z**2)
+        self.tot_distance_sorted = np.sort(self.tot_distance)
+        self.tot_displacement_sorted = [x for _, x in sorted(zip(self.tot_distance,self.tot_displacement))]
+        self.tot_displacement_sorted2 = np.sort(self.tot_displacement)
+
+class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary, DifferenceInPosition):
     SubsGeoDisDataStore = dict()
     def __init__(self, atom_index):
         self.atom_index = int(atom_index)
-        DefectDictionary.__init__(self)
-        perfectDirectory.__init__(self)
         FetchGeometryFromPerfectDictionary.__init__(self)
 
         for suffix in list(self.suffixs):
@@ -135,26 +147,8 @@ class SubstitutionalGeometryDisplacement(DefectDictionary, perfectDirectory, Fet
             self.defect_site_X = self.X[self.atom_index]
             self.defect_site_Y = self.Y[self.atom_index]
             self.defect_site_Z = self.Z[self.atom_index]
-            self.StoringPositionDifferences(suffix, self.DifferenceInPosition()[0],self.DifferenceInPosition()[1],self.DifferenceInPosition()[2])
-
-        print('works')
-        print(SubstitutionalGeometryDisplacement.SubsGeoDisDataStore)
-
-    def DifferenceInPosition(self):
-        diff_X = self.perfX - self.X
-        dist_X= self.defect_site_X - self.X
-        diff_Y = self.perfY - self.Y
-        dist_Y = self.defect_site_Y - self.Y
-        diff_Z = self.perfZ - self.Z
-        dist_Z = self.defect_site_Z - self.Z
-
-        tot_displacement = np.sqrt(diff_X**2 + diff_Y**2 + diff_Z**2)
-        tot_distance = np.sqrt(dist_X**2 + dist_Y**2 + dist_Z**2)
-        tot_distance_sorted = np.sort(tot_distance)
-        tot_displacement_sorted = [x for _, x in sorted(zip(tot_distance,tot_displacement))]
-        tot_displacement_sorted2 = np.sort(tot_displacement)
-
-        return tot_distance_sorted, tot_displacement_sorted, tot_displacement_sorted2
+            DifferenceInPosition.__init__(self, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
+            self.StoringPositionDifferences(suffix, self.tot_distance, self.tot_displacement_sorted, self.tot_displacement_sorted2)
 
     @classmethod
     def StoringPositionDifferences(cls, suffix, tot_distance, tot_displacement1, tot_displacement2):

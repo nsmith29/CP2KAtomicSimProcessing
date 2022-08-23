@@ -12,21 +12,10 @@ import DataProcessing
 class ControlWfn:
     def __init__(self):
         DataProcessing.SetupWfnVars()
-        DataProcessing.GeometryControl()
-        if not QApplication.instance():
-            app = QApplication(sys.argv)
-        else:
-            app = QApplication.instance()
-        # window = MainWindowWfn()
-        # window.show()
-        sys.exit(app.exec())
 
 
-class SetupWfnVars:
+class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
     wfnDataStore = dict()
-    listofdirs = []
-    listofsufs = []
-
     def __init__(self):
         self.defectsub = Core.UserArguments.DefectSubdir
         wfnsubs = []
@@ -34,28 +23,25 @@ class SetupWfnVars:
         wfncubes, suffixs = Core.Extension().All_defect_subdir("_1-1_l.cube", self.defectsub)
         [wfnsubs.append(x) for x in wfncubes if x not in wfnsubs]
         [wfnsuffixs.append(y) for y in suffixs if y not in wfnsuffixs]
-        self.wfnsubs, self.wfnsuffixs = FromFile.OnlyNeutralWanted(wfnsubs, wfnsuffixs).ReturnPaths()
-        for subdir, suffix in zip(list(self.wfnsubs), list(self.wfnsuffixs)):
-            self.wfnfilesdict(subdir, suffix, self.defectsub)
-        self.Save(self.wfnsubs, self.wfnsuffixs)
+        FromFile.OnlyNeutralWanted.__init__(self, wfnsubs, wfnsuffixs)
+
+        for subdir, suffix in zip(list(self.subdirs), list(self.suffixs)):
+            spins = ['ALPHA', 'BETA']
+            spin_num = [1, 2]
+            for s, n in zip(list(spins), list(spin_num)):
+                pdos_file = Core.Extension().files4defect(str("{}_k{}-1.pdos".format(s, n)), subdir)
+                DataProcessing.PdosMOprocessing.__init__(self, pdos_file)
+                self.wfnfilesdict(subdir, suffix, self.defectsub, s, n, self.HOMO_MO)
 
     @classmethod
-    def Save(cls, subdir, suffix):
-        SetupWfnVars.listofdirs = subdir
-        SetupWfnVars.listofsufs = suffix
-
-    @classmethod
-    def wfnfilesdict(cls, subdir, suffix, defectsub):
+    def wfnfilesdict(cls, subdir, suffix, defectsub, s, n, HOMO_MO_num):
         global LUMOfile, HOMOfile
         entry = dict()
         string = str(suffix)
-        spins = ['ALPHA', 'BETA']
-        spin_num = [1, 2]
         a = dict()
         b = dict()
         spindic = [a, b]
-        for s, n, d in zip(list(spins), list(spin_num), list(spindic)):
-            HOMO_MO_num = DataProcessing.PdosMOprocessing(Core.Extension().files4defect(str("{}_k{}-1.pdos".format(s,n)), subdir)).ReturnMONum()
+        for d in list(spindic):
             LUMO_MO_num = HOMO_MO_num + 1
             testchar_MO_num = HOMO_MO_num - 1
             LUMO_MO_ = []
@@ -81,21 +67,17 @@ class SetupWfnVars:
                                 d["HOMO-1"] = HOMO_1file
             entry[str("{}".format(s))] = d
 
-class ReadingConvertingCube:
-    def __init__(self, suffix, subdir):
-        self.suffix = suffix
-        self.subdir= subdir
-        wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["BETA"]['LUMO']
-        wfntest = open(str(wfn), 'r')
-
-        wfndir = asecube.read_cube(wfntest, read_data=True, program=None, verbose=False)
-
-        wfnarray = wfndir['data']
-        print(type(wfnarray))
-
-        filename = str(self.suffix + '.obj')
-        filepath = os.path.join(self.subdir, filename)
-
-        # pymesh.meshio.form_mesh(wfnarray,)
-
-        # WavefrontWriter.write(filepath, wfnarray, name='testwfn')
+# class ReadingConvertingCube:
+#     def __init__(self, suffix, subdir):
+#         self.suffix = suffix
+#         self.subdir= subdir
+#         wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["BETA"]['LUMO']
+#         wfntest = open(str(wfn), 'r')
+#
+#         wfndir = asecube.read_cube(wfntest, read_data=True, program=None, verbose=False)
+#
+#         wfnarray = wfndir['data']
+#         print(type(wfnarray))
+#
+#         filename = str(self.suffix + '.obj')
+#         filepath = os.path.join(self.subdir, filename)

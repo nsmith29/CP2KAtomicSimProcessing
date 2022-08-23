@@ -1,7 +1,6 @@
 import FromFile
 from Core import Extension
 
-# class to identify the number of atoms of each kind
 class perfLastXYZ:
     def __init__(self, subdir):
         self.subdir = subdir
@@ -53,8 +52,20 @@ class perfLastXYZ:
 
             self.total_atoms_in_calc = float(self.tot_atoms[0]) + 2
 
-    def returnlastxyzname(self):
-        return self.new_xyz_file
+class perfName4Coordinate(perfLastXYZ):
+    def __init__(self, subdir):
+        perfLastXYZ.__init__(self, subdir)
+        self.atoms = []
+        i_lines = []
+
+        file = open(self.new_xyz_file, 'r')
+        for i in range(2, int(self.total_atoms_in_calc)):
+            i_lines.append(i)
+        for position, line in enumerate(file):
+            if position in i_lines:
+                strg = line.split()
+                name = strg[0]
+                self.atoms.append(name)
 
 
 class LastXYZ:
@@ -115,8 +126,8 @@ class LastXYZ:
     #     return self.tot_atoms
 
 class Name4Coordinate(LastXYZ):
-    def __init__(self):
-        LastXYZ.__init__(self,self.subdir)
+    def __init__(self, subdir):
+        LastXYZ.__init__(self, subdir)
         self.atoms = []
         i_lines = []
 

@@ -183,7 +183,7 @@ if __name__ =='__main__':
                     pro1 = Process(target=ResultsAnalysis.plotpdos()) #
                     pro1.start()
                 if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
-                    pro2 = Process(target=DataProcessing.ControlWfn())
+                    pro2 = Process(target=Presentation.WFNGUI())
                     pro2.start()
                 if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
                     followupAns = Core.ProcessingControls.Followups[i]

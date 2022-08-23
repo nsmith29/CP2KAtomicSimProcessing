@@ -2,7 +2,7 @@
 from DataProcessing.ProcessingPdos import SetUpPdos, ControlPdos, PdosSmearedDatPlot, PdosMOprocessing, pdos, smearing, \
      Delta, YesAnalysis, NoAnalysisPerfect, NoAnalysisDefects
 
-from DataProcessing.ProcessingWfn import ControlWfn, SetupWfnVars, ReadingConvertingCube
+from DataProcessing.ProcessingWfn import ControlWfn, SetupWfnVars #, ReadingConvertingCube
 
 from DataProcessing.ProcessingChargesSpins import ControlChargeSpins,  PerfChargeSpins, \
      PerfDataFrame, SetupChargeSpins, SetupDataFrame, DefectChargeSpins, DefectDataFrame, LogfileChargeStateKey

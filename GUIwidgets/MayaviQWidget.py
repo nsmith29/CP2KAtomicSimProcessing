@@ -7,26 +7,18 @@ from traitsui.api import View, Item
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
         SceneEditor
 from mayavi.mlab import move, pitch, yaw
-import Core
-import FromFile
-import Graphics
 import ResultsAnalysis
 
-class Visualization(HasTraits):
+class Visualization(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalysis.Bonds3DplotData):
     scene = Instance(MlabSceneModel, ())
 
     def __init__(self, suffix, subdir):
         HasTraits.__init__(self)
         self.suffix = suffix
         self.subdir = subdir
-        self.num_kinds, self.included_atoms = FromFile.Kinds(
-            Core.Extension().files4defect(".inp", self.subdir)).searchingfile()
-        self.num_kind = self.num_kinds + 1
+        ResultsAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
+        ResultsAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
 
-        for elem in list(self.included_atoms):
-            exec(f'self.color{elem} = Graphics.atom_lookup(elem).identification()[0]')
-            exec(f'self.size{elem} = Graphics.atom_lookup(elem).identification()[1]')
-            exec(f'self.k{elem}_x, self.k{elem}_y, self.k{elem}_z = ResultsAnalysis.Atoms3DplotData(self.suffix,elem).DataPoints4Kind()')
 
     @on_trait_change('scene.activated')
     def update_plot(self):
@@ -34,9 +26,11 @@ class Visualization(HasTraits):
         # populate the scene when the view is not yet open, as some
         # VTK features require a GLContext.
         # We can do normal mlab calls on the embedded scene.
+
         for elem in list(self.included_atoms):
             self.scene.mlab.points3d(eval("self.k{}_x".format(elem)),eval("self.k{}_y".format(elem)),eval("self.k{}_z".format(elem)),color=eval("self.color{}".format(elem)),mode='sphere',scale_factor=eval("self.size{}".format(elem)))
-
+        for num in range(0, int(self.BondCounter)):
+            self.scene.mlab.plot3d(eval("self.bond{}_x".format(num)),eval("self.bond{}_y".format(num)),eval("self.bond{}_z".format(num)),color=(0,0,0),tube_radius=0.05)
         pitch(-3.75)
         yaw(-3.2)
 

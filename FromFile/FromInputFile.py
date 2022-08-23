@@ -5,12 +5,9 @@ class NameOfProject:
     def __init__(self, input_file):
         self.input_file = input_file
 
-    # def ReturnName(self):
         with open(self.input_file) as inp:
             name = inp.readlines()[2].split()
             self.project_name = name[-1]
-
-        # return project_name
 
 class Kinds:
     kind = '     &KIND'
@@ -19,7 +16,6 @@ class Kinds:
         self.included_atoms = []
         self.input_file = input_file
 
-    # def searchingfile(self):
         inp = open(self.input_file, 'r')
         index = 0
         for line in inp:
@@ -38,8 +34,6 @@ class Kinds:
                 atom = strg[-1]
                 self.included_atoms.append(atom)
         inp.close()
-
-        # return num_kinds, self.included_atoms
 
 class chargecheck:
     def __init__(self, input_file):
@@ -87,7 +81,6 @@ class OnlyNeutralWanted(ChargeStateIdentification):
             if self.state == 0:
                 self.subdirs.append(subdir)
                 self.suffixs.append(suffix)
-        # return self.subdirs, self.suffixs
 
 class CheckSameCalculationSettings:
     xc = 'XC'
@@ -154,7 +147,6 @@ class LatticeVectors:
         self.C = None
         self.input_file = input_file
 
-    def search(self):
         inp = open(self.input_file, 'r')
         index = 0
         for line in inp:
@@ -183,5 +175,3 @@ class LatticeVectors:
                         exec(f'{l}_full_line_arr.remove("C")')
                         exec(f'self.C = [float(x) for x in {l}_full_line_arr]')
             inp.close()
-
-        return self.A, self.B, self.C
