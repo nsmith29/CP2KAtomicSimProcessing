@@ -1,9 +1,11 @@
 import os
 import sys
-from multiprocessing import Process
+import multiprocessing as mp
 import Core
+import GUIwidgets
 import Presentation
 import DataProcessing
+import ResultsAnalysis
 
 os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
 
@@ -80,47 +82,49 @@ class Start:
             f"{bcolors.ENDC}, {bcolors.BOLD}IPR{bcolors.ENDC}, {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn"
             f"{bcolors.ENDC}, {bcolors.BOLD}work function{bcolors.ENDC} : ")
         while all(x not in processing for x in ["wfn", "geometry", "band structure", "work function", "IPR", "pdos",
-                               "charges and spin", "charge transition levels"]):
+                               "charges and spin", "charge transition levels", "test"]):
             print(f"{bcolors.FAIL}Error! {bcolors.WARNING}Invalid results type stated, valid methods to choose from "
-                  f"include:{bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges and spins{bcolors.ENDC},"
+                  f"include:{bcolors.ENDC}{bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges and spins{bcolors.ENDC},"
             f"{bcolors.BOLD}charge transition levels{bcolors.ENDC}, {bcolors.BOLD}geometry{bcolors.ENDC}, {bcolors.BOLD}"
                   f"IPR{bcolors.ENDC}, "
             f" {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn{bcolors.ENDC}, {bcolors.BOLD}work function"
                   f"{bcolors.ENDC}: ")
             processing = input(f"{bcolors.OKGREEN}Which results would you like to process?: {bcolors.ENDC}")
 
-        followupQs = []
-        if processing.find('band structure') != -1:
-            followup3 = input(f"{bcolors.OKCYAN}What version of CP2K were calculations conducted with (i.e. CP2K "
-                              f"v8.1)?: {bcolors.ENDC}")
-            followupQs.append(followup3)
-        if processing.find('charges and spin') != -1:
-            followup1 = input(f"{bcolors.OKCYAN}Please state the indices of nearest atomic neighbours surrounding "
-                              f"defect and the index of the defect:{bcolors.ENDC} ")
-            followupQs.append(followup1)
-        if processing.find('charge transition levels') != -1:
-            followup4 = input(f"{bcolors.OKCYAN}Please state the charge states you have investigated ({bcolors.BOLD}e.g."
-                              f" 0, -2, etc{bcolors.ENDC}{bcolors.OKCYAN}): {bcolors.ENDC} ")
-            followupQs.append(followup4)
-        if processing.find('geometry') != -1:
-            print(f"{bcolors.OKCYAN}Please state the types of defect(s) being studied and the associated atomic index of"
-                  f" this defect in format'{bcolors.BOLD}defect type, atom index'{bcolors.ENDC}{bcolors.OKCYAN}")
-            followup5 = input(f"{bcolors.OKCYAN}Defects type options include: {bcolors.BOLD}substitutional{bcolors.ENDC}"
-                              f"{bcolors.OKCYAN}, {bcolors.BOLD}interstitional{bcolors.ENDC}{bcolors.OKCYAN}, "
-                              f"{bcolors.BOLD}vacancy{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.OKCYAN}subs-vacancy "
-                              f"complex{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.BOLD}inter-vacancy complex{bcolors.ENDC}"
-                              f"{bcolors.OKCYAN}: {bcolors.ENDC}")
-            followupQs.append(followup5)
-        if processing.find('IPR') != -1:
-            followup2 = input(f"{bcolors.OKCYAN}Are your calculation spin polarised({bcolors.BOLD}y/n{bcolors.BOLD}"
-                              f"{bcolors.OKCYAN})?: {bcolors.ENDC}")
-            followupQs.append(followup2)
-        if processing.find('pdos') != -1:
-            followupQs.append(' ')
-        if processing.find('wfn') != -1:
-            followupQs.append(' ')
-        if processing.find('work function') != -1:
-            followupQs.append(' ')
+        self.followupQs = []
+        processing = processing.split(', ')
+        for i in range(len(processing)):
+            if processing[i].find('band structure') != -1:
+                followup3 = input(f"{bcolors.OKCYAN}What version of CP2K were calculations conducted with (i.e. CP2K "
+                                  f"v8.1)?: {bcolors.ENDC}")
+                self.followupQs.append(followup3)
+            if processing[i].find('charges and spin') != -1:
+                followup1 = input(f"{bcolors.OKCYAN}Please state the indices of nearest atomic neighbours surrounding "
+                                  f"defect and the index of the defect:{bcolors.ENDC} ")
+                self.followupQs.append(followup1)
+            if processing[i].find('charge transition levels') != -1:
+                followup4 = input(f"{bcolors.OKCYAN}Please state the charge states you have investigated ({bcolors.BOLD}e.g."
+                                  f" 0, -2, etc{bcolors.ENDC}{bcolors.OKCYAN}): {bcolors.ENDC} ")
+                self.followupQs.append(followup4)
+            if processing[i].find('geometry') != -1:
+                print(f"{bcolors.OKCYAN}Please state the types of defect(s) being studied and the associated atomic index of"
+                      f" this defect in format'{bcolors.BOLD}defect type, atom index'{bcolors.ENDC}{bcolors.OKCYAN}")
+                followup5 = input(f"{bcolors.OKCYAN}Defects type options include: {bcolors.BOLD}substitutional{bcolors.ENDC}"
+                                  f"{bcolors.OKCYAN}, {bcolors.BOLD}interstitional{bcolors.ENDC}{bcolors.OKCYAN}, "
+                                  f"{bcolors.BOLD}vacancy{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.OKCYAN}subs-vacancy "
+                                  f"complex{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.BOLD}inter-vacancy complex{bcolors.ENDC}"
+                                  f"{bcolors.OKCYAN}: {bcolors.ENDC}")
+                self.followupQs.append(followup5)
+            if processing[i].find('IPR') != -1:
+                followup2 = input(f"{bcolors.OKCYAN}Are your calculation spin polarised({bcolors.BOLD}y/n{bcolors.BOLD}"
+                                  f"{bcolors.OKCYAN})?: {bcolors.ENDC}")
+                self.followupQs.append(followup2)
+            if processing[i].find('pdos') != -1:
+               self.followupQs.append('-')
+            if processing[i].find('wfn') != -1:
+               self.followupQs.append('-')
+            if processing[i].find('work function') != -1:
+                self.followupQs.append('-')
 
         print(f"{bcolors.OKGREEN}Would you like to perform data analysis({bcolors.BOLD}y/n{bcolors.ENDC}"
               f"{bcolors.OKGREEN})?")
@@ -154,35 +158,47 @@ class Start:
             elif overwrite == 'ok':
                 Presentation.csvfile().Append()
 
+
         Core.UserWants(analysis, display)
-        Core.ProcessingControls.SavingOtherWants(processing, followupQs)
+        Core.ProcessingControls.SavingOtherWants(processing, self.followupQs)
+
+class Process(mp.Process):
+    def __init__(self, *args, **kwargs):
+        mp.Process.__init__(self, *args, **kwargs)
+
+    def run(self):
+        try:
+            mp.Process.run(self)
+        except TypeError:
+                pass
 
 if __name__ =='__main__':
     Start(*sys.argv)
-
     if Core.UserWants.DisplayWants == 'n':
-        for i in range(len(Core.ProcessingControls.ProcessingWants)):
-            if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
-                if Core.UserWants.AnalysisWants == 'n':
-                    pro1a = Process(target=Core.ProcessingControls.PdosNo())
-                    pro1a.start()
-                elif Core.UserWants.AnalysisWants == 'y':
-                    pro1b = Process(target=DataProcessing.ControlPdos().YesAnalysis())
-                    pro1b.start()
-            if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
-                pro2 = Process(target=DataProcessing.ControlWfn())
-                pro2.start()
-            if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
-                followupAns = Core.ProcessingControls.Followups[i]
-                followup_Ans = Core.ProcessingControls.Process_wants[i]
-                if Core.UserWants.AnalysisWants == 'n':
-                    pro3a = Process(target=Core.ProcessingControls.CharSpinNo(followupAns,followup_Ans))
-                    pro3a.start()
-                if Core.UserWants.AnalysisWants == 'y':
-                    pro3b = Process(target=Core.ProcessingControls.CharSpinYes(followupAns))
-                    pro3b.start()
-            if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
-                followupAns = Core.ProcessingControls.Followups[i].split(',')
-                pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
-                pro4.start()
+        if Core.UserWants.AnalysisWants == 'n':
+            pro = Process(target=Presentation.Printing2CSV())
+            pro.start()
+        else:
+            for i in range(len(Core.ProcessingControls.ProcessingWants)):
+                if Core.ProcessingControls.ProcessingWants[i] == 'test':
+                    pro0 = Process(target=GUIwidgets.TestingGeometry())
+                    pro0.start()
+                if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
+                    pro1 = Process(target=ResultsAnalysis.plotpdos()) #
+                    pro1.start()
+                if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
+                    pro2 = Process(target=Presentation.WFNGUI())
+                    pro2.start()
+                if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
+                    followupAns = Core.ProcessingControls.Followups[i]
+                    followup_Ans = Core.ProcessingControls.Process_wants[i]
+                    pro3 = Process(target=Core.ProcessingControls.CharSpinYes(followupAns))
+                    pro3.start()
+                if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
+                    pro4 = Process(target=Presentation.geometryGUI())
+                    pro4.start()
+                    # followupAns = Core.ProcessingControls.Followups[i].split(',')
+                    # pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
+                    # pro4.start()
+
 

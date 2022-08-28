@@ -1,10 +1,8 @@
 import os
 import Core
 import datetime
-
 import DataProcessing
-import FromFile
-
+import multiprocessing as mp
 
 class csvfile:
     csvname = ''
@@ -15,7 +13,7 @@ class csvfile:
     charges_and_spinsDataStore = []
 
     def __init__(self):
-        stem = Core.Extension().current_work_directory()  # ''.join(path_stem)
+        stem = Core.Extension().current_work_directory()
         filename = "processed_data.csv"
         self.datacsv = os.path.join(stem, filename)
         csvfile.CSVsaved(self.datacsv)
@@ -25,7 +23,7 @@ class csvfile:
         csvfile.csvname = csv
 
     def Overwrite(self):
-        datafile = open(self.datacsv, 'w')  # "w" for overwrite file; "a" for append to file end
+        datafile = open(self.datacsv, 'w')
         datafile.write('# test as of %s. \n' % (datetime.datetime.now()))
         datafile.close()
 
@@ -34,81 +32,143 @@ class csvfile:
         datafile.write('# test as of %s. \n' % (datetime.datetime.now()))
         datafile.close()
 
-    @classmethod
-    def turnFalse(cls, variable):
-        exec(f'csvfile.{variable}Wanted = False')
+class Process(mp.Process):
+    def __init__(self, *args, **kwargs):
+        mp.Process.__init__(self, *args, **kwargs)
 
-    @classmethod
-    def turnTrue(cls, variable):
-        exec(f'csvfile.{variable}Wanted = True')
+    def run(self):
+        try:
+            mp.Process.run(self)
+        except TypeError:
+                pass
 
-    @classmethod
-    def ChargeDirectory(cls):
-        csvfile.charges_and_spinsDataStore = FromFile.SortingChargeStates.ProjectChargesStore
+class Data4perfect(DataProcessing.NoAnalysisPerfect, DataProcessing.PerfDataFrame):
+    def __init__(self):
+        self.analysisperf0 = None
+        self.analysisperf1 = None
+        for i in range(len(Core.ProcessingControls.ProcessingWants)):
+            if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
+                DataProcessing.NoAnalysisPerfect.__init__(self)
+                exec(f'self.analysisperf{i} = "          Alpha spin -" + str(self.perfHOMO_alpha) + "  " + '
+                     f'str(self.perfLUMO_alpha) + "  " + str(self.perfalpha_diff) + """\n""" + "          Beta spin -" + '
+                     f'str(self.perfHOMO_beta) + "  " + str(self.perfLUMO_beta) + "  " + str(self.perfalpha_diff) + """\n""" ')
+            if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
+                answers = Core.ProcessingControls.Followups[i]
+                DataProcessing.PerfDataFrame.__init__(self, answers)
+                exec(f'self.analysisperf{i} = self.df.to_csv()')
 
-    @classmethod
-    def PdosDirectory(cls, suffix, alphaHOMO, alphaLUMO, alphabandgap, betaHOMO, betaLUMO, betabandgap):
-        results = dict()
-        string = str(suffix)
-        innerkeys = ["HOMO", "LUMO", "bandgap"]
-        alphalist = [alphaHOMO, alphaLUMO, alphabandgap]
-        betalist = [betaHOMO, betaLUMO, betabandgap]
-        a = dict(zip(innerkeys, alphalist))
-        b = dict(zip(innerkeys, betalist))
-        results["alpha"] = a
-        results["beta"] = b
-        csvfile.pdosDataStore[string] = results
+class DefectSubDirsOrdering(DataProcessing.SetUpPdos, DataProcessing.SetupChargeSpins):
+    def __init__(self):
+        self.subdirs0 = []
+        self.subdirs1 = []
+        self.orderedprinting = []
+        self.suffixs0 = []
+        self.suffixs1 = []
+        self.orderedsuffixs = []
+        for i in range(len(Core.ProcessingControls.ProcessingWants)):
+            if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
+                DataProcessing.SetUpPdos.__init__(self)
+                exec(f'self.subdirs{i} = self.subdirs')
+                exec(f'self.suffixs{i} = self.suffixs')
+            if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
+                DataProcessing.SetupChargeSpins.__init__(self)
+                exec(f'self.subdirs{i} = self.neutralsubdir')
+                exec(f'self.suffixs{i} = self.defsuffixs')
 
-class Printing2CSV:
-    def __init__(self, ProcesssingWants, rawinputs):
-        self.ProcessingWants = ProcesssingWants
-        self.rawinputs = rawinputs
-        classvaribles4wants = []
-        for input in list(self.rawinputs):
-            classvaribles4wants.append(eval("csvfile.{}Wanted".format(input)))
-        if all(x == True for x in classvaribles4wants):
-            perfsubdir = Core.UserArguments.PerfectSubdir
-            datacsv = open(csvfile.csvname, 'a')
-            datacsv.write(str(perfsubdir) + '\n')
-            for want, input in zip(list(self.ProcessingWants), list(self.rawinputs)):
+        if self.subdirs1 != []:
+            for dir, suffix in zip(list(self.subdirs0), list(self.suffixs0)):
+                if dir in self.subdirs1:
+                    self.orderedprinting.append(dir)
+                    self.orderedsuffixs.append(suffix)
+                    self.subdirs0.remove(dir)
+                    self.suffixs0.remove(suffix)
+                    self.subdirs1.remove(dir)
+                    self.suffixs1.remove(suffix)
+        else:
+            self.orderedprinting = self.subdirs0
+            self.orderedsuffixs = self.suffixs0
+            self.subdirs0 = []
+            self.suffixs0 = []
+
+class CollectingDefectPdosData(DataProcessing.NoAnalysisDefects):
+    def __init__(self, subdir, j):
+        exec(f'self.analysisdef{j} = None')
+        DataProcessing.SetUpPdos.__init__(self)
+        subdirindex = self.subdirs.index(subdir)
+        pdosfile = self.defpdos[subdirindex]
+        DataProcessing.NoAnalysisDefects.__init__(self, pdosfile)
+        exec(f'self.analysisdef{j} = "          Alpha spin -" + str(self.defHOMO_alpha) + "  " + '
+             f'str(self.defLUMO_alpha) + "  " + str(self.defalpha_diff) + """\n""" + "          Beta spin -" + '
+             f'str(self.defHOMO_beta) + "  " + str(self.defLUMO_beta) + "  " + str(self.defalpha_diff) + """\n""" ')
+
+class CollectingDefectChargeSpinData(DataProcessing.DefectDataFrame):
+    def __init__(self, subdir, j):
+        exec(f'self.analysisdef{j} = None')
+        answers = Core.ProcessingControls.Followups[j]
+        DataProcessing.SetupChargeSpins.__init__(self)
+        subdirindex = self.neutralsubdir.index(subdir)
+        neutralname = self.namesneutral[subdirindex]
+        neutralinp = self.inpneutral[subdirindex]
+        neutralfile = self.defneutral[subdirindex]
+        DataProcessing.DefectDataFrame.__init__(self, answers, neutralname, neutralinp, neutralfile)
+        exec(f'self.analysisdef{j} = self.df.to_csv()')
+
+class Data4Defect(CollectingDefectPdosData, CollectingDefectChargeSpinData):
+    def __init__(self, subdir, i, which):
+        self.analysisdef0 = None
+        self.analysisdef1 = None
+        if i == len(Core.ProcessingControls.ProcessingWants):
+            for j in range(len(Core.ProcessingControls.ProcessingWants)):
+                if Core.ProcessingControls.ProcessingWants[j] == 'pdos':
+                    CollectingDefectPdosData.__init__(self, subdir, j)
+                if Core.ProcessingControls.ProcessingWants[j] == 'charges and spins':
+                    CollectingDefectChargeSpinData.__init__(self, subdir, j)
+        elif i == 1:
+            if Core.ProcessingControls.ProcessingWants[which] == 'pdos':
+                CollectingDefectPdosData.__init__(self, subdir, which)
+            if Core.ProcessingControls.ProcessingWants[which] == 'charges and spins':
+                CollectingDefectChargeSpinData.__init__(self, subdir, which)
+            print('hi')
+
+class Printing2CSV(Data4perfect, Data4Defect, DefectSubDirsOrdering):
+    def __init__(self):
+        perfsubdir = Core.UserArguments.PerfectSubdir
+        datacsv = open(csvfile.csvname, 'a')
+        datacsv.write(str(perfsubdir) + '\n')
+        Data4perfect.__init__(self)
+        input = Core.ProcessingControls.ProcessingWants[0]
+        datacsv.write(str("     {}:".format(input)) + '\n')
+        datacsv.write(self.analysisperf0)
+        if self.analysisperf1 != None:
+            input = Core.ProcessingControls.ProcessingWants[1]
+            datacsv.write(str("     {}:".format(input)) + '\n')
+            datacsv.write(self.analysisperf1)
+        DefectSubDirsOrdering.__init__(self)
+        for subdir, suffix in zip(list(self.orderedprinting), list(self.orderedsuffixs)):
+            datacsv.write(str(suffix) + '\n')
+            i = len(Core.ProcessingControls.ProcessingWants)
+            Data4Defect.__init__(self, subdir, i, '-')
+            input = Core.ProcessingControls.ProcessingWants[0]
+            datacsv.write(str("     {}:".format(input)) + '\n')
+            datacsv.write(self.analysisdef0)
+            if self.analysisdef1 != None:
+                input = Core.ProcessingControls.ProcessingWants[1]
                 datacsv.write(str("     {}:".format(input)) + '\n')
-                if want == 'charges and spins':
-                    DataFrame = DataProcessing.CreateDataFrame4ResultsCSV(perfsubdir)
-                    DataFrame.to_csv(path_or_buf=None, sep=',', na_rep='', float_format=None,
-                                 columns=None, header=True, index=True, index_label=None, mode='w', encoding=None,
-                                 compression='infer', quoting=None, quotechar='"', line_terminator=None,
-                                 chunksize=None, date_format=None, doublequote=True, escapechar=None,
-                                 decimal='.', errors='strict', storage_options=None)
-                if want == 'pdos':
-                    alpha = str(eval("csvfile.{}DataStore[perfsubdir]['alpha']".format(input))).replace('{', " ")
-                    alpha = alpha.replace("}", "")
-                    alpha = alpha.replace("'", "")
-                    alpha = alpha.replace(":", "=")
-                    beta = str(eval("csvfile.{}DataStore[perfsubdir]['beta']".format(input))).replace('{', " ")
-                    beta = beta.replace("}", "")
-                    beta = beta.replace("'", "")
-                    beta = beta.replace(":", "=")
-                    datacsv.write('          Alpha spin -' + alpha + '\n')
-                    datacsv.write('          Beta spin -' + beta + '\n')
-            self.defectsub = Core.UserArguments.DefectSubdir
-            suffixs = Core.Extension().All_defect_subdir(".log", self.defectsub)[-1]
-            for suffix in list(suffixs):
-                datacsv.write(str(suffix) + '\n')
-                for want, input in zip(list(self.ProcessingWants), list(self.rawinputs)):
-                    if suffix in eval("csvfile.{}DataStore".format(input)):
-                        datacsv.write(str("     {}:".format(want)) + '\n')
-                        if want == 'pdos':
-                            alpha = str(eval("csvfile.{}DataStore[suffix]['alpha']".format(input))).replace('{', " ")
-                            alpha = alpha.replace("}", "")
-                            alpha = alpha.replace("'", "")
-                            alpha = alpha.replace(":", "=")
-                            beta = str(eval("csvfile.{}DataStore[suffix]['beta']".format(input))).replace('{', " ")
-                            beta = beta.replace("}", "")
-                            beta = beta.replace("'", "")
-                            beta = beta.replace(":", "=")
-                            datacsv.write('          Alpha spin -' + alpha + '\n')
-                            datacsv.write('          Beta spin -' + beta + '\n')
-
-            datacsv.close()
+                datacsv.write(self.analysisperf1)
+        if self.subdirs0 != []:
+            for subdir in list(self.subdirs0):
+                datacsv.write(str(subdir) + '\n')
+                Data4Defect.__init__(self, subdir, 1, 0)
+                input = Core.ProcessingControls.ProcessingWants[0]
+                datacsv.write(str("     {}:".format(input)) + '\n')
+                datacsv.write(self.analysisdef0)
+        if self.subdirs1 != []:
+            for subdir in list(self.subdirs1):
+                datacsv.write(str(subdir) + '\n')
+                Data4Defect.__init__(self, subdir, 1, 1)
+                input = Core.ProcessingControls.ProcessingWants[1]
+                datacsv.write(str("     {}:".format(input)) + '\n')
+                datacsv.write(self.analysisdef1)
+        datacsv.close()
 
 

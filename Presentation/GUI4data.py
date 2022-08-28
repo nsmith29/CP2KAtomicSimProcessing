@@ -20,7 +20,7 @@ if __name__ == "__main__":
     else:
         app = QApplication.instance()
 
-    window = Presentation.MainWindow()
+    window = Presentation.MainWindowGUI()
 
     window.show()
     app.exec()

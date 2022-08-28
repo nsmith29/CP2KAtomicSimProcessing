@@ -1,69 +1,79 @@
 import numpy as np
+import warnings
 from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.core.structure import Structure
 import Core
 import FromFile
 import Graphics
 import DataProcessing
+import ResultsAnalysis
 
-class Atoms3DplotData():
-    def __init__(self, suffix, kind):
-        self.suffix = suffix
-        self.kind = kind
-        self.x = []
-        self.y = []
-        self.z = []
-
-        self.totatom, self.atoms, self.X, self.Y, self.Z = DataProcessing.FetchGeometryFromDictionary(
-            self.suffix).Return()
-        self.DataPoints4Kind()
-
-    def DataPoints4Kind(self):
+class DataPoints4Kind(DataProcessing.FetchGeometryFromDefectDictionary):
+    def __init__(self, suffix, elem):
+        DataProcessing.FetchGeometryFromDefectDictionary.__init__(self, suffix)
+        exec(f'self.k{elem}_x = []')
+        exec(f'self.k{elem}_y = []')
+        exec(f'self.k{elem}_z = []')
         for Atom, index in zip(list(self.atoms), range(0, int(self.totatom))):
-            if Atom == self.kind:
-                self.x.append(self.X[index])
-                self.y.append(self.Y[index])
-                self.z.append(self.Z[index])
+            if Atom == elem:
+                exec(f'self.k{elem}_x.append(self.X[index])')
+                exec(f'self.k{elem}_y.append(self.Y[index])')
+                exec(f'self.k{elem}_z.append(self.Z[index])')
 
-        return self.x, self.y, self.z
+class Atoms3DplotData(FromFile.Kinds, Graphics.atom_lookup, DataPoints4Kind):
+    def __init__(self, suffix, subdir):
+        input = Core.Extension().files4defect(".inp", subdir)
+        FromFile.Kinds.__init__(self, input)
+        self.num_kind = self.num_kinds + 1
+        for elem in list(self.included_atoms):
+            Graphics.atom_lookup.__init__(self, elem)
+            exec(f'self.color{elem} = self.atom_color')
+            exec(f'self.size{elem} = self.size_normalised')
+            DataPoints4Kind.__init__(self, suffix, elem)
 
-class Bonds3DplotData():
+class Bonds3DplotData(DataProcessing.FetchGeometryFromDefectDictionary, FromFile.LatticeVectors, FromFile.ChargeStateIdentification, ResultsAnalysis.CellBounds):
     BondsAlreadyMadeStore = dict()
-    def __init__(self, subdir, suffix):
-        self.subdir = subdir
-        self.suffix = suffix
+    def __init__(self, suffix, subdir):
+        self.sequence = []
+        self.BondCounter = 0
+        self.atomsbonded = []
         self.structure = None
+        DataProcessing.FetchGeometryFromDefectDictionary.__init__(self, suffix)
+        for x, y, z in zip(list(self.X), list(self.Y), list(self.Z)):
+            self.sequence.append([x, y, z])
+        input = Core.Extension().files4defect(".inp", subdir)
+        FromFile.LatticeVectors.__init__(self, input)
+        FromFile.ChargeStateIdentification.__init__(self, input)
 
-        self.totatoms, self.atoms, self.X, self.Y, self.Z = DataProcessing.FetchGeometryFromDictionary(self.suffix).Return()
+        warnings.filterwarnings('ignore', '.*CrystalNN.*', )
+        warnings.filterwarnings('ignore', '.*No oxidation.*', )
 
-        for g in range(0, int(self.totatoms)):
-            self.addAllAtoms(g)
+        structure = Structure([self.A, self.B, self.C], self.atoms, self.sequence, self.state, to_unit_cell=True, coords_are_cartesian=True)
 
-        self.GeometryStructure()
+        for i in range(0, int(self.totatom)):
+            self.atomsbonded.append(i)
+            atom = i
+            nn_dict = CrystalNN(distance_cutoffs=(0.5,1.5)).get_nn_info(structure, i)
+            for j in range(len(nn_dict)):
+                bondingindex = nn_dict[j]['site_index']
+                if bondingindex not in self.atomsbonded:
+                    exec(f'self.bond{self.BondCounter}_x = []')
+                    exec(f'self.bond{self.BondCounter}_y = []')
+                    exec(f'self.bond{self.BondCounter}_z = []')
+                    test = nn_dict[j]['site']
+                    strtest = str("{}".format(test)).replace("[","").replace("]","").split()
+                    x = float(strtest[0])
+                    y = float(strtest[1])
+                    z = float(strtest[2])
+                    if 0 < z < self.C[2]:
+                        ResultsAnalysis.CellBounds.__init__(self, self.A, self.B, self.C, x, z)
+                        if self.lowerXbound < x < self.upperXbound and self.lowerYbound < y < self.upperYbound:
+                            exec(f'self.bond{self.BondCounter}_x.append(self.X[atom])')
+                            exec(f'self.bond{self.BondCounter}_x.append(self.X[bondingindex])')
+                            exec(f'self.bond{self.BondCounter}_y.append(self.Y[atom])')
+                            exec(f'self.bond{self.BondCounter}_y.append(self.Y[bondingindex])')
+                            exec(f'self.bond{self.BondCounter}_z.append(self.Z[atom])')
+                            exec(f'self.bond{self.BondCounter}_z.append(self.Z[bondingindex])')
+                            self.BondCounter += 1
 
-        # for i in range(0, int(self.totatoms[0])):
-        #     nn_dict = CrystalNN().get_nn_info(self.structure,i)
-        #     for n in range(len(nn_dict)):
-        #         possbond = str("{}".format(nn_dict[i]['site']))
-        #         if possbond.find("-") != 1:
-        #
-        #             nn_dict[i]['site_index']
-    @classmethod
-    def addBondEntry(cls, atomindex, bondedindex):
-        G = str("{}".format(atomindex))
-        Bonds3DplotData.BondsAlreadyMadeStore[G] = bondedindex
 
-    @classmethod
-    def addAllAtoms(cls, g):
-        G = str("{}".format(g))
-        Bonds3DplotData.BondsAlreadyMadeStore[G] = dict()
-
-    def GeometryStructure(self):
-        A, B, C = FromFile.LatticeVectors(Core.Extension.files4defect(".inp",self.subdir)).search()
-        sequence = []
-        for x, y, z in zip(list(self.X), list(self.Y),list(self.Z)):
-            sequence.append([x,y,z])
-
-        charge = FromFile.ChargeStateIdentification(Core.Extension.files4defect(".inp",self.subdir)).returnstate()
-
-        self.structure = Structure([A, B, C],self.atoms,sequence,charge, to_unit_cell=True, coords_are_cartesian=True)

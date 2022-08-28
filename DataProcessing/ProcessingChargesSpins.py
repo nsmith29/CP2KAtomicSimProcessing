@@ -1,215 +1,189 @@
 import pandas as pd
-
 import Core
 import FromFile
-import Presentation
-from Core import Extension
+# import Presentation
 
-class ControlChargeSpins:
-    charges_and_spinsData = dict()
-    Indices = []
-    def __init__(self, answers):
-        self.indices = answers.split(',')
 
-        if Core.UserWants.AnalysisWants == 'n':
-            self.SaveIndices(self.indices)
-
+class SetupChargeSpins(FromFile.ReturnProjectNames,FromFile.CategorisingChargeStates):
+    def __init__(self):
         self.perfsubdir = Core.UserArguments.PerfectSubdir
-        self.perffile = Extension().perfect_subdir(".log", self.perfsubdir)
-
-        self.CreateDictionary(self.perfsubdir, self.perffile, self.indices)
+        self.perffile = Core.Extension().perfect_subdir(".log", self.perfsubdir)
 
         self.defectsub = Core.UserArguments.DefectSubdir
-        self.defsubdirs, self.defsuffixs = Extension().All_defect_subdir(".log", self.defectsub)
+        self.defsubdirs, self.defsuffixs = Core.Extension().All_defect_subdir(".log", self.defectsub)
+        FromFile.ReturnProjectNames.__init__(self, self.defsubdirs) #self.defneutral[logfiles], self.neutralsubdir[subdir], self.inpneutral[subdir], self.namesneutral[project_name]
+        FromFile.CategorisingChargeStates.__init__(self, self.defsubdirs)
 
-        self.projectnames = FromFile.SortingChargeStates(self.defsubdirs).returnprojectnames()
+class SetupDataFrame:
+    def __init__(self):
+        self.columnstring = [' ']
+        self.chargesM1 = ["charge"]
+        self.spinsM1 = ["spin"]
+        self.popAM1 = ["pop \u03B1"]
+        self.popBM1 = ["pop \u03B2"]
+        self.chargesM2 = ["charge"]
+        self.spinsM2 = ["spin"]
+        self.popAM2 = ["pop \u03B1"]
+        self.popBM2 = ["pop \u03B2"]
 
-        if Core.UserWants.AnalysisWants == 'n':
-            Presentation.csvfile.ChargeDirectory()
-            Presentation.csvfile.turnTrue("charges_and_spins")
+class PerfChargeSpins(SetupChargeSpins, FromFile.GetChargesSpins, SetupDataFrame):
+    def __init__(self, indices):
+        self.indices = indices.replace(' ', '').split(',')
+        SetupChargeSpins.__init__(self)
+        SetupDataFrame.__init__(self)
+        for index in self.indices:
+            FromFile.GetChargesSpins.__init__(self,self.perffile,index)
+            for n in 1, 2:
+                exec(f'self.perf{index}_pop{n}_charge = self.pop{n}_charge')
+                exec(f'self.perf{index}_pop{n}_spin = self.pop{n}_spin')
+                exec(f'self.perf{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
+                exec(f'self.perf{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
+                exec(f'self.chargesM{n}.append(self.perf{index}_pop{n}_charge)')
+                exec(f'self.spinsM{n}.append(self.perf{index}_pop{n}_spin)')
+                exec(f'self.popAM{n}.append(self.perf{index}_pop{n}_beta_pop)')
+                exec(f'self.popBM{n}.append(self.perf{index}_pop{n}_alpha_pop)')
 
-        for name in list(self.projectnames):
-            self.CreateDictionary(name, 'blank', self.indices)
+class PerfDataFrame(PerfChargeSpins):
+    def __init__(self, answers):
+        PerfChargeSpins.__init__(self, answers)
 
-        self.CreateDataFrame4Results()
+        for index in self.indices:
+            string = str('{}'.format(index))
+            self.columnstring.append(string)
 
-    @classmethod
-    def  SaveIndices(cls, indices):
-        ControlChargeSpins.Indices = indices
 
-    @classmethod
-    def CreateDictionary(cls, projectname, filename, indices):
-        entry = dict()
-        projectstring = str(projectname)
-        neutral = []
-        for index in list(indices):
-            atomindex = dict()
-            if projectname == Core.UserArguments.PerfectSubdir:
-                pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(filename, index).returnchargespins()
-            else:
-                pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring]["0"]["logfile"],index).returnchargespins()
-            atom = []
-            innerkeys = ["Method", "spin", "charge", "pop a", "pop b"]
-            method1 = ["Mulliken", pop1spin, pop1charge, pop1popA, pop1popB]
-            method2 = ["Hirshfield", pop2spin, pop2charge, pop2popA, pop2popB]
+        self.df = pd.DataFrame([self.chargesM1, self.spinsM1, self.popAM1, self.popBM1, self.chargesM2, self.spinsM2, self.popAM2, self.popBM2],
+                          columns=self.columnstring, index=['Mulliken', '', '', '', 'Hirshfeld', '', '', ''])
+        # self.a = self.df.columns.str.split(', ', expand=True).values
+        # self.df.columns = pd.MultiIndex.from_tuples([('', x[0]) if pd.isnull(x[1]) else x for x in self.a])
 
-            method1dict = dict(zip(innerkeys, method1))
-            method2dict = dict(zip(innerkeys, method2))
-            atom.append(method1dict)
-            atom.append(method2dict)
-            atomindex[index] = atom
-            neutral.append(atomindex)
-        entry["0"] = neutral
-        if projectname != Core.UserArguments.PerfectSubdir:
-            Arrneg1 = []
-            Arrneg2 = []
-            Arrneg3 = []
-            Arrpos1 = []
-            Arrpos2 = []
-            Arrpos3 = []
-            for state, key in zip(('neg1', 'neg2', 'neg3', 'pos1', 'pos2', 'pos3'), ("-1","-2","-3","1","2","3")):
-                if FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))] != '-':
-                    for index in list(indices):
-                        atomindex = dict()
-                        atom = []
-                        pop1charge, pop1spin, pop1popA, pop1popB, pop2charge, pop2spin, pop2popA, pop2popB = FromFile.GetChargesSpins(FromFile.SortingChargeStates.ProjectChargesStore[projectstring][str("{}".format(key))],index).returnchargespins()
-                        innerkeys = ["Method", "spin", "charge", "pop a", "pop b"]
-                        method1 = ["Mulliken", pop1spin, pop1charge, pop1popA, pop1popB]
-                        method2 = ["Hirshfield", pop2spin, pop2charge, pop2popA, pop2popB]
+class SortingChargeStatesOut(SetupChargeSpins, FromFile.ProjectSortingIt):
+    def __init__(self, indices, neutralname, neutralinp):
+        self.indices = indices.replace(' ', '').split(',')
+        SetupChargeSpins.__init__(self)
 
-                        method1dict = dict(zip(innerkeys, method1))
-                        method2dict = dict(zip(innerkeys, method2))
-                        atom.append(method1dict)
-                        atom.append(method2dict)
-                        atomindex[index] = atom
-                        exec(f'Arr{state}.append(atomindex)')
-                    entry[str("{}".format(key))] = eval("Arr{}".format(state))
-        ControlChargeSpins.charges_and_spinsData[projectstring] = entry
+        self.logfiles = []
+        for sign in 'neg', 'pos':
+            for num in 1, 2, 3:
+                if eval("self.def{}{}".format(sign, num)) != []:
+                    FromFile.ProjectSortingIt.__init__(self, neutralname, eval("self.names{}{}".format(sign, num)),
+                                              eval("self.def{}{}".format(sign, num)),
+                                              eval("self.inp{}{}".format(sign, num)), neutralinp)
+                    self.logfiles.append(self.file2return[0])
+                else:
+                    self.logfiles.append("-")
 
-    def CreateDataFrame4Results(self):
-        for name in list(self.projectnames):
-            columnstring = [' ']
-            chargesM1 = ["charge"]
-            spinsM1 = ["spin"]
-            popAM1 = ["pop \u03B1"]
-            popBM1 = ["pop \u03B2"]
-            chargesM2 = ["charge"]
-            spinsM2 = ["spin"]
-            popAM2 = ["pop \u03B1"]
-            popBM2 = ["pop \u03B2"]
-            for index in self.indices:
-                string = str('{}, {}'.format(self.perfsubdir,index))
-                columnstring.append(string)
-                for i in range(len(ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"])):
-                    if index in ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i]:
-                        chargetest = round(float(ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][0]['charge']),3)
-                        chargesM1.append(chargetest)
-                        spintest = round(float(ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][0]['spin']),3)
-                        spinsM1.append(spintest)
-                        popAtest = round(float(ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][0]['pop a']),3)
-                        popAM1.append(popAtest)
-                        popBtest = round(float(ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][0]['pop b']),3)
-                        popBM1.append(popBtest)
+class LogfileChargeStateKey:
+    def __init__(self, i):
+        if i == '-':
+            self.filestate = 0
+            self.filestatename = 0
+        elif i == 0:
+            self.filestate = -1
+            self.filestatename = '_1'
+        elif i == 1:
+            self.filestate = -2
+            self.filestatename = '_2'
+        elif i == 2:
+            self.filestate = -3
+            self.filestatename = '_3'
+        elif i == 3:
+            self.filestate = 1
+            self.filestatename = 1
+        elif i == 4:
+            self.filestate = 2
+            self.filestatename = 2
+        elif i == 5:
+            self.filestate = 3
+            self.filestatename = 3
 
-                        chargetest2 = ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][1]['charge']
-                        chargesM2.append(chargetest2)
-                        spintest2 = ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][1]['spin']
-                        spinsM2.append(spintest2)
-                        popAtest2 = ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][1]['pop a']
-                        popAM2.append(popAtest2)
-                        popBtest2 = ControlChargeSpins.charges_and_spinsData[self.perfsubdir]["0"][i][index][1]['pop b']
-                        popBM2.append(popBtest2)
+class DefectChargeSpins(FromFile.GetChargesSpins, LogfileChargeStateKey):
+    def __init__(self, name, i, file, index):
+        LogfileChargeStateKey.__init__(self, i)
+        self.string = str('{} {}, {}'.format(name, self.filestate, index))
+        FromFile.GetChargesSpins.__init__(self, file, index)
+        for n in 1,2:
+            exec(f'self.def_{self.filestatename}_{index}_pop{n}_charge = self.pop{n}_charge')
+            exec(f'self.def_{self.filestatename}_{index}_pop{n}_spin = self.pop{n}_spin')
+            exec(f'self.def_{self.filestatename}_{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
+            exec(f'self.def_{self.filestatename}_{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
 
-            for state in list(ControlChargeSpins.charges_and_spinsData[name]):
+class DefectDataFrame(SortingChargeStatesOut, DefectChargeSpins, SetupDataFrame):
+    def __init__(self, answers, neutralname, neutralinp, neutralfile):
+        SetupDataFrame.__init__(self)
+        SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
+        for index in self.indices:
+            DefectChargeSpins.__init__(self, neutralname, '-', neutralfile, index)
+            string = str('{}, {}'.format(self.filestate, index))
+            self.columnstring.append(string)
+            for n in 1, 2:
+                exec(f'self.chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
+                exec(f'self.spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
+                exec(f'self.popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
+                exec(f'self.popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+        for logfile, i in zip(list(self.logfiles), range(len(self.logfiles))):
+            if logfile != "-":
                 for index in self.indices:
-                    string = str('{} {}, {}'.format(name, state, index))
-                    columnstring.append(string)
-                    for i in range(len(ControlChargeSpins.charges_and_spinsData[name][state])):
-                        if index in ControlChargeSpins.charges_and_spinsData[name][state][i]:
-                            chargetest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['charge']),3)
-                            chargesM1.append(chargetest)
-                            spintest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['spin']),3)
-                            spinsM1.append(spintest)
-                            popAtest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['pop a']),3)
-                            popAM1.append(popAtest)
-                            popBtest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['pop b']),3)
-                            popBM1.append(popBtest)
+                    DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
+                    string = str('{}, {}'.format(self.filestate, index))
+                    self.columnstring.append(string)
+                    for n in 1, 2:
+                        exec(f'self.chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
+                        exec(f'self.spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
+                        exec(f'self.popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
+                        exec(f'self.popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+        self.df = pd.DataFrame(
+            [self.chargesM1, self.spinsM1, self.popAM1, self.popBM1, self.chargesM2, self.spinsM2, self.popAM2,
+             self.popBM2],
+            columns=self.columnstring, index=['Mulliken', '', '', '', 'Hirshfeld', '', '', ''])
+        self.a = self.df.columns.str.split(', ', expand=True).values
+        self.df.columns = pd.MultiIndex.from_tuples([('', x[0]) if pd.isnull(x[1]) else x for x in self.a])
 
-                            chargetest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['charge']
-                            chargesM2.append(chargetest2)
-                            spintest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['spin']
-                            spinsM2.append(spintest2)
-                            popAtest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['pop a']
-                            popAM2.append(popAtest2)
-                            popBtest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['pop b']
-                            popBM2.append(popBtest2)
 
-            df = pd.DataFrame([chargesM1, spinsM1, popAM1, popBM1,chargesM2, spinsM2, popAM2, popBM2], columns=columnstring, index=['Mulliken', '', '', '','Hirshfeld', '', '', ''])
+class ControlChargeSpins(PerfChargeSpins, SortingChargeStatesOut, DefectChargeSpins):
+    def __init__(self, answers):
+        PerfChargeSpins.__init__(self, answers)
+        for index in self.indices:
+            string = str('{}, {}'.format(self.perfsubdir, index))
+            self.columnstring.append(string)
+        for neutralname, file, subdir, neutralinp in zip(list(self.namesneutral),list(self.defneutral), list(self.neutralsubdir),
+                                                   list(self.inpneutral)):
+            print(subdir)
+            columnstring = self.columnstring
+            chargesM1 = self.chargesM1
+            spinsM1 = self.spinsM1
+            popAM1 = self.popAM1
+            popBM1 = self.popBM1
+            chargesM2 = self.chargesM2
+            spinsM2 = self.spinsM2
+            popAM2 = self.popAM2
+            popBM2 = self.popBM2
+            SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
+
+            for index in self.indices:
+                DefectChargeSpins.__init__(self, neutralname,'-', file, index)
+                columnstring.append(self.string)
+                for n in 1,2:
+                    exec(f'chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
+                    exec(f'spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
+                    exec(f'popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
+                    exec(f'popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+            for logfile, i in zip(list(self.logfiles), range(len(self.logfiles))):
+                if logfile != "-":
+                    for index in self.indices:
+                        DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
+                        columnstring.append(self.string)
+                        for n in 1, 2:
+                            exec(f'chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
+                            exec(f'spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
+                            exec(f'popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
+                            exec(f'popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+
+            # print(columnstring, '\n', chargesM1, '\n', spinsM1, '\n', popAM1, '\n', popBM1, '\n',  chargesM2, '\n', spinsM2, '\n', popAM2, '\n', popBM2)
+            df = pd.DataFrame([chargesM1, spinsM1, popAM1, popBM1, chargesM2, spinsM2, popAM2, popBM2],
+                              columns=columnstring, index=['Mulliken', '', '', '', 'Hirshfeld', '', '', ''])
             a = df.columns.str.split(', ', expand=True).values
-            df.columns = pd.MultiIndex.from_tuples([('',x[0]) if pd.isnull(x[1]) else x for x in a])
+            df.columns = pd.MultiIndex.from_tuples([('', x[0]) if pd.isnull(x[1]) else x for x in a])
             print(df)
 
-class CreateDataFrame4ResultsCSV:
-    def __init__(self, name):
-        self.indices = ControlChargeSpins.Indices
-        self.perfsubdir = Core.UserArguments.PerfectSubdir
-        columnstring = [' ']
-        chargesM1 = ["charge"]
-        spinsM1 = ["spin"]
-        popAM1 = ["pop \u03B1"]
-        popBM1 = ["pop \u03B2"]
-        chargesM2 = ["charge"]
-        spinsM2 = ["spin"]
-        popAM2 = ["pop \u03B1"]
-        popBM2 = ["pop \u03B2"]
-        if name == Core.UserArguments.PerfectSubdir:
-            for index in self.indices:
-                string = str('{}, {}'.format(self.perfsubdir,index))
-                columnstring.append(string)
-                for i in range(len(ControlChargeSpins.charges_and_spinsData[name]["0"])):
-                    if index in ControlChargeSpins.charges_and_spinsData[name]["0"][i]:
-                        chargetest = round(float(ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][0]['charge']),3)
-                        chargesM1.append(chargetest)
-                        spintest = round(float(ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][0]['spin']),3)
-                        spinsM1.append(spintest)
-                        popAtest = round(float(ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][0]['pop a']),3)
-                        popAM1.append(popAtest)
-                        popBtest = round(float(ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][0]['pop b']),3)
-                        popBM1.append(popBtest)
 
-                        chargetest2 = ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][1]['charge']
-                        chargesM2.append(chargetest2)
-                        spintest2 = ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][1]['spin']
-                        spinsM2.append(spintest2)
-                        popAtest2 = ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][1]['pop a']
-                        popAM2.append(popAtest2)
-                        popBtest2 = ControlChargeSpins.charges_and_spinsData[name]["0"][i][index][1]['pop b']
-                        popBM2.append(popBtest2)
-        else:
-            for state in list(ControlChargeSpins.charges_and_spinsData[name]):
-                for index in self.indices:
-                    string = str('{} {}, {}'.format(name, state, index))
-                    columnstring.append(string)
-                    for i in range(len(ControlChargeSpins.charges_and_spinsData[name][state])):
-                        if index in ControlChargeSpins.charges_and_spinsData[name][state][i]:
-                            chargetest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['charge']),3)
-                            chargesM1.append(chargetest)
-                            spintest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['spin']),3)
-                            spinsM1.append(spintest)
-                            popAtest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['pop a']),3)
-                            popAM1.append(popAtest)
-                            popBtest = round(float(ControlChargeSpins.charges_and_spinsData[name][state][i][index][0]['pop b']),3)
-                            popBM1.append(popBtest)
-
-                            chargetest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['charge']
-                            chargesM2.append(chargetest2)
-                            spintest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['spin']
-                            spinsM2.append(spintest2)
-                            popAtest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['pop a']
-                            popAM2.append(popAtest2)
-                            popBtest2 = ControlChargeSpins.charges_and_spinsData[name][state][i][index][1]['pop b']
-                            popBM2.append(popBtest2)
-
-            df = pd.DataFrame([chargesM1, spinsM1, popAM1, popBM1,chargesM2, spinsM2, popAM2, popBM2], columns=columnstring, index=['Mulliken', '', '', '','Hirshfeld', '', '', ''])
-            a = df.columns.str.split(', ', expand=True).values
-            df.columns = pd.MultiIndex.from_tuples([('',x[0]) if pd.isnull(x[1]) else x for x in a])

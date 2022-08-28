@@ -9,7 +9,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtDataVisualization import *
 
 class WfnData():
-    def __int__(self):
+    def __int__(self, suffix, subdir):
         print('in process')
 
 

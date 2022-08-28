@@ -21,30 +21,29 @@ class MainWindowGUI(QMainWindow):
 
         self.setFixedSize(QSize(1440, 850))
 
-class MainWindowWfn(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Wave-function analysis")
-        self.setFixedSize(QSize(650,550))
-        self.comboboxMain = QComboBox()
-        self.comboboxMain.addItem(' ')
-        for suffix in list(DataProcessing.SetupWfnVars.listofsufs):
-            self.comboboxMain.addItem(str("{}".format(suffix)))
-        self.comboboxMain.currentTextChanged.connect(self.MainChoice)
-
-        dockWidgetCombo = QDockWidget(" ")
-        dockWidgetCombo.setAllowedAreas(Qt.TopDockWidgetArea |
-                                        Qt.LeftDockWidgetArea)
-        dockWidgetCombo.setWidget(self.comboboxMain)
-        self.addDockWidget(Qt.TopDockWidgetArea, dockWidgetCombo, Qt.Vertical)
-        self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
-
-        self.setCentralWidget(self.wfnFrame)
-
-    def MainChoice(self):
-        selected = self.comboboxMain.currentText()
-        # for suffix, subdir in zip(list(DataProcessing.SetupWfnVars.listofsufs), list(DataProcessing.SetupWfnVars.listofdirs)):
-        if [selected == suffix for suffix in list(DataProcessing.SetupWfnVars.listofsufs)]:
-            self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
-            self.wfnFrame.AddWfnContainer(selected)
-            self.setCentralWidget(self.wfnFrame)
+# class MainWindowWfn(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle("Wave-function analysis")
+#         self.setFixedSize(QSize(650,550))
+#         self.comboboxMain = QComboBox()
+#         self.comboboxMain.addItem(' ')
+#         for suffix in list(DataProcessing.SetupWfnVars.listofsufs):
+#             self.comboboxMain.addItem(str("{}".format(suffix)))
+#         self.comboboxMain.currentTextChanged.connect(self.MainChoice)
+#
+#         dockWidgetCombo = QDockWidget(" ")
+#         dockWidgetCombo.setAllowedAreas(Qt.TopDockWidgetArea |
+#                                         Qt.LeftDockWidgetArea)
+#         dockWidgetCombo.setWidget(self.comboboxMain)
+#         self.addDockWidget(Qt.TopDockWidgetArea, dockWidgetCombo, Qt.Vertical)
+#         self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
+#
+#         self.setCentralWidget(self.wfnFrame)
+#
+#     def MainChoice(self):
+#         selected = self.comboboxMain.currentText()
+#         if [selected == suffix for suffix in list(DataProcessing.SetupWfnVars.listofsufs)]:
+#             self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
+#             self.wfnFrame.AddWfnContainer(selected)
+#             self.setCentralWidget(self.wfnFrame)

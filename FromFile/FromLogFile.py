@@ -36,10 +36,10 @@ class GetChargesSpins:
         self.pop2_beta_pop = pop2_arr[5]
         self.pop2_alpha_pop = pop2_arr[4]
 
-        self.returnchargespins()
+        # self.returnchargespins()
 
-    def returnchargespins(self):
-        return self.pop1_charge, self.pop1_spin, self.pop1_alpha_pop, self.pop1_beta_pop, self.pop2_charge, self.pop2_spin, self.pop2_alpha_pop, self.pop2_beta_pop
+    # def returnchargespins(self):
+    #     return self.pop1_charge, self.pop1_spin, self.pop1_alpha_pop, self.pop1_beta_pop, self.pop2_charge, self.pop2_spin, self.pop2_alpha_pop, self.pop2_beta_pop
 
 
 #### ------------------------------------------------------------------------------------------------------ ####
