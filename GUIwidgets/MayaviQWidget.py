@@ -14,23 +14,19 @@ class Visualization(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalysis.
 
     def __init__(self, suffix, subdir):
         HasTraits.__init__(self)
-        self.suffix = suffix
-        self.subdir = subdir
         ResultsAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
         ResultsAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
 
+    # @on_trait_change()
 
     @on_trait_change('scene.activated')
     def update_plot(self):
-        # This function is called when the view is opened. We don't
-        # populate the scene when the view is not yet open, as some
-        # VTK features require a GLContext.
-        # We can do normal mlab calls on the embedded scene.
 
         for elem in list(self.included_atoms):
             self.scene.mlab.points3d(eval("self.k{}_x".format(elem)),eval("self.k{}_y".format(elem)),eval("self.k{}_z".format(elem)),color=eval("self.color{}".format(elem)),mode='sphere',scale_factor=eval("self.size{}".format(elem)))
         for num in range(0, int(self.BondCounter)):
             self.scene.mlab.plot3d(eval("self.bond{}_x".format(num)),eval("self.bond{}_y".format(num)),eval("self.bond{}_z".format(num)),color=(0,0,0),tube_radius=0.05)
+
         pitch(-3.75)
         yaw(-3.2)
 
@@ -56,8 +52,6 @@ class VisualizationGEO(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalys
 
     def __init__(self, suffix, subdir):
         HasTraits.__init__(self)
-        self.suffix = suffix
-        self.subdir = subdir
         ResultsAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
         ResultsAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
 
@@ -69,6 +63,7 @@ class VisualizationGEO(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalys
             self.scene.mlab.points3d(eval("self.k{}_x".format(elem)),eval("self.k{}_y".format(elem)),eval("self.k{}_z".format(elem)),color=eval("self.color{}".format(elem)),mode='sphere',scale_factor=eval("self.size{}".format(elem)))
         for num in range(0, int(self.BondCounter)):
             self.scene.mlab.plot3d(eval("self.bond{}_x".format(num)),eval("self.bond{}_y".format(num)),eval("self.bond{}_z".format(num)),color=(0,0,0),tube_radius=0.05)
+
         pitch(-3.75)
         yaw(-3.2)
 

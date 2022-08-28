@@ -3,15 +3,11 @@ import numpy as np
 import os
 import Core
 from PySide6.QtWidgets import QApplication
+import ase.io.cube as cube
 import FromFile
 import DataProcessing
 # from Presentation import MainWindowWfn
 # import Graphics
-
-
-class ControlWfn:
-    def __init__(self):
-        DataProcessing.SetupWfnVars()
 
 
 class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
@@ -20,6 +16,7 @@ class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
         self.defectsub = Core.UserArguments.DefectSubdir
         wfnsubs = []
         wfnsuffixs = []
+        HOMO_MOs = []
         wfncubes, suffixs = Core.Extension().All_defect_subdir("_1-1_l.cube", self.defectsub)
         [wfnsubs.append(x) for x in wfncubes if x not in wfnsubs]
         [wfnsuffixs.append(y) for y in suffixs if y not in wfnsuffixs]
@@ -31,17 +28,19 @@ class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
             for s, n in zip(list(spins), list(spin_num)):
                 pdos_file = Core.Extension().files4defect(str("{}_k{}-1.pdos".format(s, n)), subdir)
                 DataProcessing.PdosMOprocessing.__init__(self, pdos_file)
-                self.wfnfilesdict(subdir, suffix, self.defectsub, s, n, self.HOMO_MO)
+                HOMO_MOs.append(self.HOMO_MO)
+            self.wfnfilesdict(subdir, suffix, self.defectsub, spins, spin_num, HOMO_MOs)
+
 
     @classmethod
-    def wfnfilesdict(cls, subdir, suffix, defectsub, s, n, HOMO_MO_num):
-        global LUMOfile, HOMOfile
+    def wfnfilesdict(cls, subdir, suffix, defectsub, spins, spin_num, HOMO_MOs):
+        # global LUMOfile, HOMOfile
         entry = dict()
         string = str(suffix)
         a = dict()
         b = dict()
         spindic = [a, b]
-        for d in list(spindic):
+        for s, n, d, HOMO_MO_num in zip(list(spins), list(spin_num), list(spindic), list(HOMO_MOs)):
             LUMO_MO_num = HOMO_MO_num + 1
             testchar_MO_num = HOMO_MO_num - 1
             LUMO_MO_ = []
@@ -65,19 +64,24 @@ class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
                             if dir_ == subdir:
                                 HOMO_1file = Core.Extension().files4defect(str("{}{}{}_{}-1_l.cube".format(testchar_MO_[0],testchar_MO_[1],testchar_MO_[2],n)), subdir)
                                 d["HOMO-1"] = HOMO_1file
-            entry[str("{}".format(s))] = d
+            if s == 'ALPHA':
+                entry['ALPHA'] = d
+            elif s == 'BETA':
+                entry['BETA'] = d
+        SetupWfnVars.wfnDataStore[string] = entry
 
-# class ReadingConvertingCube:
-#     def __init__(self, suffix, subdir):
-#         self.suffix = suffix
-#         self.subdir= subdir
-#         wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["BETA"]['LUMO']
-#         wfntest = open(str(wfn), 'r')
+class ReadingConvertingCube:
+    def __init__(self, suffix, subdir):
+        self.suffix = suffix
+        self.subdir= subdir
+        wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["BETA"]['LUMO']
+        data, atoms = cube.read_cube_data(wfn)
+        mn = data.min()
+        mx = data.max()
+
+        OptsContours = 4
+        n = int(OptsContours)
+        d = (mx - mn) /n
+        countours = np.linspace(mn + d/ 2, mx - d / 2, n).tolist()
+
 #
-#         wfndir = asecube.read_cube(wfntest, read_data=True, program=None, verbose=False)
-#
-#         wfnarray = wfndir['data']
-#         print(type(wfnarray))
-#
-#         filename = str(self.suffix + '.obj')
-#         filepath = os.path.join(self.subdir, filename)

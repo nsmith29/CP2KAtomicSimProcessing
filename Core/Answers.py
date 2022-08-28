@@ -68,12 +68,5 @@ class ProcessingControls:
     def CharSpinYes(followupAns):
         action = DataProcessing.ControlChargeSpins(followupAns)
 
-    # @staticmethod
-    # def GeometryChosen(followupAns):
-    #     defect_type = followupAns[0]
-    #     atomic_index = followupAns[1]
-    #     if defect_type == 'substitutional':
-    #         action = DataProcessing.SubstitutionalGeometryDisplacement(atomic_index)
-
 
 
