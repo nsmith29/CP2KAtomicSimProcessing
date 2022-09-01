@@ -153,7 +153,9 @@ class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, Fet
         self.defect_site_X = self.X[index]
         self.defect_site_Y = self.Y[index]
         self.defect_site_Z = self.Z[index]
+
         self.defect_atom = self.atoms[index]
+
         DifferenceInPosition.__init__(self, self.totatom, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
 
 class MaxDisplacement(SubstitutionalGeometryDisplacement):
