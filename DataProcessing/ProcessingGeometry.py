@@ -149,10 +149,17 @@ class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, Fet
         FetchGeometryFromPerfectDictionary.__init__(self)
 
         FetchGeometryFromDefectDictionary.__init__(self,suf)
-        self.defect_site_X = self.X[self.atom_index]
-        self.defect_site_Y = self.Y[self.atom_index]
-        self.defect_site_Z = self.Z[self.atom_index]
+        index = self.atom_index - 1
+        self.defect_site_X = self.X[index]
+        self.defect_site_Y = self.Y[index]
+        self.defect_site_Z = self.Z[index]
+        self.defect_atom = self.atoms[index]
         DifferenceInPosition.__init__(self, self.totatom, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
+
+class MaxDisplacement(SubstitutionalGeometryDisplacement):
+    def __init__(self, atom_index, suf):
+        SubstitutionalGeometryDisplacement.__init__(self, atom_index, suf)
+        print(suf, self.tot_displacement_sorted2[-1])
 
 
 class InterstitionalGeometryDisplacement:
