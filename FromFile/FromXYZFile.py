@@ -72,7 +72,8 @@ class LastXYZ:
     def __init__(self,subdir):
         self.subdir = subdir
         lastxyz = Extension().files4defect("-L.xyz", self.subdir)
-        if lastxyz == " ":
+        print(lastxyz)
+        if lastxyz == None:
             xyz_file = Extension().files4defect(".xyz", self.subdir)
             name_list = []
             for i in range(len(xyz_file)):
@@ -143,20 +144,20 @@ class Name4Coordinate(LastXYZ):
         # return atoms
 
 
-class NumTotAtomsOfKind(LastXYZ):
-    def __init__(self, subdir, kinds, num):
-        self.subdir = subdir
+class NumTotAtomsOfKind():
+    def __init__(self, lastXYZ, kinds, num):
+        # self.subdir = subdir
         self.kinds = kinds
         self.num = num
 
         self.atoms4kind = []#self.GetNumOfEachKind()
-        LastXYZ.__init__(self,self.subdir)
+        # LastXYZ.__init__(self,self.subdir)
     # def GetNumOfEachKind(self):
     #     xyzfile = FromFile.LastXYZ(self.subdir).returnlastxyzname()
         # atoms4kind = []
         for i in range(0, int(self.num)):
             find = self.kinds[i]
-            file = open(self.new_xyz_file, 'r')
+            file = open(lastXYZ, 'r')
             index = 0
             count = 0
             for line in file:
@@ -168,22 +169,21 @@ class NumTotAtomsOfKind(LastXYZ):
 
         # return atoms4kind
 class PdosScalingFactor(NumTotAtomsOfKind):
-    def __init__(self, subdir, kinds, num, specifickind):
-        NumTotAtomsOfKind.__init__(self, subdir, kinds, num)
-        kindAnum = 0
+    def __init__(self, lastXYZ, kinds, num, specifickind):
+        NumTotAtomsOfKind.__init__(self, lastXYZ, kinds, num)
+        self.largest_num_atom_kind = 0
+        self.specific_number_of_kind = 0
         for i in range(0, int(self.num)):
             if self.kinds[i] != specifickind:
-                if kindAnum == 0:
-                    kindAnum = self.atoms4kind[i]
-                else:
-                    kindBnum = self.atoms4kind[i]
-                    if kindAnum < kindBnum:
-                        kindAnum = kindBnum
+                exec(f'kind{i}num = self.atoms4kind[i]')
+                if i == 0:
+                    exec(f'self.largest_num_atom_kind = kind{i}num')
+                elif self.largest_num_atom_kind < eval("kind{}num".format(i)):
+                    exec(f'self.largest_num_atom_kind = kind{i}num')
             else:
-                index = i
-        specific_number = self.atoms4kind[index]
+                self.specific_number_of_kind = self.atoms4kind[i]
 
-        self.scalingfactor = 50 * round((kindAnum - specific_number)/50)
+        self.scalingfactor = 50 * round((self.largest_num_atom_kind - self.specific_number_of_kind)/50)
 
         # return scalingfactor
 
