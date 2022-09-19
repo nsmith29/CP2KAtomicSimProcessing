@@ -27,7 +27,6 @@ class SetupStructure4pymatgen(DataProcessing.FetchGeometryFromPerfectDictionary,
 
 class NearestNeighbours:
     def __init__(self, structure, i):
-        self.BondCounter = 0
         self.defind = i - 1
         self.nn_dict = CrystalNN(distance_cutoffs=(0.5, 1.5)).get_nn_info(structure, i)
 

@@ -72,7 +72,6 @@ class LastXYZ:
     def __init__(self,subdir):
         self.subdir = subdir
         lastxyz = Extension().files4defect("-L.xyz", self.subdir)
-        print(lastxyz)
         if lastxyz == None:
             xyz_file = Extension().files4defect(".xyz", self.subdir)
             name_list = []

@@ -13,19 +13,19 @@ class WorkingOutGeometryData2Plot(DataProcessing.MaxDisplacement, DataProcessing
     def __init__(self, suffix):
         self.Xdata = None
         self.Ydata = None
-        if Core.ProcessingControls.ProcessingWants.find('test') != -1:
-            DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, 250, suffix)
+        # if Core.ProcessingControls.ProcessingWants.find('test') != -1:
+        #     DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, 250, suffix)
+        #     self.Xdata = self.tot_distance_sorted
+        #     self.Ydata = self.tot_displacement_sorted
+        # else:
+        if Core.ProcessingControls.DefectType == 'substitutional':
+            DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom[0], suffix)
             self.Xdata = self.tot_distance_sorted
             self.Ydata = self.tot_displacement_sorted
-        else:
-            if Core.ProcessingControls.DefectType == 'substitutional':
-                DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom[0], suffix)
-                self.Xdata = self.tot_distance_sorted
-                self.Ydata = self.tot_displacement_sorted
-            if Core.ProcessingControls.DefectType == 'subs-vacancy complex':
-                DataProcessing.SubsVacancyGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
-            if Core.ProcessingControls.DefectType == 'max displacement':
-                DataProcessing.MaxDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
+        if Core.ProcessingControls.DefectType == 'subs-vacancy complex':
+            DataProcessing.SubsVacancyGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
+        if Core.ProcessingControls.DefectType == 'max displacement':
+            DataProcessing.MaxDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
 
         # for i in range(len(Core.ProcessingControls.ProcessingWants)):
         #     if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
@@ -82,7 +82,7 @@ class StructurePlotFrame(QtGui.QWidget):
         self.container.deleteLater()
         del self.container
 
-        self.container = GUIwidgets.MayaviWfnQWidget(suffix, subdir, self)
+        self.container = GUIwidgets.MayaviGEOQWidget(suffix, subdir, self)
         self.layout.addWidget(self.container, 1, 1, 16, 17)
 
     def displacements_plot(self, subdir):

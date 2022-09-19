@@ -1,12 +1,8 @@
 import numpy as np
-import warnings
-from pymatgen.analysis.local_env import CrystalNN
-from pymatgen.core.structure import Structure
 import Core
 import FromFile
 import GraphicAnalysis
 import DataProcessing
-# import ResultsAnalysis
 
 class DataPoints4Kind(DataProcessing.FetchGeometryFromDefectDictionary):
     def __init__(self, suffix, elem):
@@ -33,9 +29,9 @@ class Atoms3DplotData(FromFile.Kinds, GraphicAnalysis.atom_lookup, DataPoints4Ki
 
 class Bonds3DplotData(DataProcessing.SetupStructure4pymatgen, DataProcessing.NearestNeighbours, DataProcessing.CellBounds):
     def __init__(self, suffix, subdir):
+        DataProcessing.SetupStructure4pymatgen.__init__(self, suffix, subdir)
         self.BondCounter = 0
         self.atomsbonded = []
-        DataProcessing.SetupStructure4pymatgen.__init__(self, suffix, subdir)
 
         for i in range(0, int(self.totatom)):
             self.atomsbonded.append(i)
@@ -51,15 +47,19 @@ class Bonds3DplotData(DataProcessing.SetupStructure4pymatgen, DataProcessing.Nea
                     x = float(strcoords[0])
                     y = float(strcoords[1])
                     z = float(strcoords[2])
-                    if 0 < z < self.C[2]:
+                    bondlength = np.sqrt((self.X[i] - x)**2 + (self.Y[i] - y)**2 + (self.Z[i] - z)**2)
+                    c = np.sqrt(self.C[0]**2 + self.C[1]**2 + self.C[2]**2)
+                    if 0 < z < c:
                         DataProcessing.CellBounds.__init__(self, self.A, self.B, self.C, x, z)
                         if self.lowerXbound < x < self.upperXbound and self.lowerYbound < y < self.upperYbound:
-                            exec(f'self.bond{self.BondCounter}_x.append(self.X[atom])')
-                            exec(f'self.bond{self.BondCounter}_x.append(self.X[bondingindex])')
-                            exec(f'self.bond{self.BondCounter}_y.append(self.Y[atom])')
-                            exec(f'self.bond{self.BondCounter}_y.append(self.Y[bondingindex])')
-                            exec(f'self.bond{self.BondCounter}_z.append(self.Z[atom])')
-                            exec(f'self.bond{self.BondCounter}_z.append(self.Z[bondingindex])')
-                            self.BondCounter += 1
+                            if bondlength < c/2:
+                                exec(f'self.bond{self.BondCounter}_x.append(self.X[i])')
+                                exec(f'self.bond{self.BondCounter}_x.append(self.X[bondingindex])')
+                                exec(f'self.bond{self.BondCounter}_y.append(self.Y[i])')
+                                exec(f'self.bond{self.BondCounter}_y.append(self.Y[bondingindex])')
+                                exec(f'self.bond{self.BondCounter}_z.append(self.Z[i])')
+                                exec(f'self.bond{self.BondCounter}_z.append(self.Z[bondingindex])')
+                                self.BondCounter += 1
+
 
 

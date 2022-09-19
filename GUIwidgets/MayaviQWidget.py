@@ -7,15 +7,15 @@ from traitsui.api import View, Item
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
         SceneEditor
 from mayavi.mlab import move, pitch, yaw
-import ResultsAnalysis
+import GraphicAnalysis
 
-class Visualization(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalysis.Bonds3DplotData):
+class Visualization(HasTraits, GraphicAnalysis.Atoms3DplotData, GraphicAnalysis.Bonds3DplotData):
     scene = Instance(MlabSceneModel, ())
 
     def __init__(self, suffix, subdir):
         HasTraits.__init__(self)
-        ResultsAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
-        ResultsAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
+        GraphicAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
+        GraphicAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
 
     # @on_trait_change()
 
@@ -47,18 +47,16 @@ class MayaviWfnQWidget(QtGui.QWidget):
         layout.addWidget(self.ui)
         self.ui.setParent(self)
 
-class VisualizationGEO(HasTraits, ResultsAnalysis.Atoms3DplotData, ResultsAnalysis.Bonds3DplotData):
+class VisualizationGEO(HasTraits, GraphicAnalysis.Atoms3DplotData, GraphicAnalysis.Bonds3DplotData):
     scene = Instance(MlabSceneModel, ())
 
     def __init__(self, suffix, subdir):
         HasTraits.__init__(self)
-        ResultsAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
-        ResultsAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
-
+        GraphicAnalysis.Atoms3DplotData.__init__(self, suffix, subdir)
+        GraphicAnalysis.Bonds3DplotData.__init__(self, suffix, subdir)
 
     @on_trait_change('scene.activated')
     def update_plot(self):
-
         for elem in list(self.included_atoms):
             self.scene.mlab.points3d(eval("self.k{}_x".format(elem)),eval("self.k{}_y".format(elem)),eval("self.k{}_z".format(elem)),color=eval("self.color{}".format(elem)),mode='sphere',scale_factor=eval("self.size{}".format(elem)))
         for num in range(0, int(self.BondCounter)):
@@ -78,7 +76,7 @@ class MayaviGEOQWidget(QtGui.QWidget):
         layout = QtGui.QVBoxLayout(self)
         layout.setContentsMargins(0,0,0,0)
         layout.setSpacing(0)
-        self.visualization = Visualization(suffix,subdir)
+        self.visualization = VisualizationGEO(suffix,subdir)
         self.ui = self.visualization.edit_traits(parent=self,
                                                  kind='subpanel').control
         layout.addWidget(self.ui)

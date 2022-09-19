@@ -35,7 +35,7 @@ class GetChargesSpins:
             elif self.foundpop1 is True and self.foundpop2 is True:
                 break
             else:
-                index -=1
+                index-=1
         log.close()
 
     @classmethod
