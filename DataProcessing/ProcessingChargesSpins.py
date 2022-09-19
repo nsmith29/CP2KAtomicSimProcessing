@@ -30,23 +30,27 @@ class PerfChargeSpins(SetupChargeSpins, FromFile.GetChargesSpins, SetupDataFrame
     def __init__(self, indices):
         self.indices = indices.replace(' ', '').split(',')
         SetupChargeSpins.__init__(self)
+
+    def makingperfdata(self):
         SetupDataFrame.__init__(self)
+        FromFile.GetChargesSpins.__init__(self, self.perffile)
         for index in self.indices:
-            FromFile.GetChargesSpins.__init__(self,self.perffile,index)
+            self.data4atomindex(index)
             for n in 1, 2:
-                exec(f'self.perf{index}_pop{n}_charge = self.pop{n}_charge')
-                exec(f'self.perf{index}_pop{n}_spin = self.pop{n}_spin')
-                exec(f'self.perf{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
-                exec(f'self.perf{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
-                exec(f'self.chargesM{n}.append(self.perf{index}_pop{n}_charge)')
-                exec(f'self.spinsM{n}.append(self.perf{index}_pop{n}_spin)')
-                exec(f'self.popAM{n}.append(self.perf{index}_pop{n}_beta_pop)')
-                exec(f'self.popBM{n}.append(self.perf{index}_pop{n}_alpha_pop)')
+                # exec(f'self.perf{index}_pop{n}_charge = self.pop{n}_charge')
+                # exec(f'self.perf{index}_pop{n}_spin = self.pop{n}_spin')
+                # exec(f'self.perf{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
+                # exec(f'self.perf{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
+                exec(f'self.chargesM{n}.append(self.pop{n}_charge)')#self.perf{index}_pop{n}_charge
+                exec(f'self.spinsM{n}.append(self.pop{n}_spin)')#self.perf{index}_pop{n}_spin
+                exec(f'self.popAM{n}.append(self.pop{n}_beta_pop)')#self.perf{index}_pop{n}_beta_pop
+                exec(f'self.popBM{n}.append(self.pop{n}_alpha_pop)')#perf{index}_pop{n}_alpha_pop
+        FromFile.GetChargesSpins.changingbackclassvars()
 
 class PerfDataFrame(PerfChargeSpins):
     def __init__(self, answers):
         PerfChargeSpins.__init__(self, answers)
-
+        self.makingperfdata()
         for index in self.indices:
             string = str('{}'.format(index))
             self.columnstring.append(string)
@@ -97,41 +101,57 @@ class LogfileChargeStateKey:
             self.filestate = 3
             self.filestatename = 3
 
-class DefectChargeSpins(FromFile.GetChargesSpins, LogfileChargeStateKey):
-    def __init__(self, name, i, file, index):
-        LogfileChargeStateKey.__init__(self, i)
-        self.string = str('{} {}, {}'.format(name, self.filestate, index))
-        FromFile.GetChargesSpins.__init__(self, file, index)
-        for n in 1,2:
-            exec(f'self.def_{self.filestatename}_{index}_pop{n}_charge = self.pop{n}_charge')
-            exec(f'self.def_{self.filestatename}_{index}_pop{n}_spin = self.pop{n}_spin')
-            exec(f'self.def_{self.filestatename}_{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
-            exec(f'self.def_{self.filestatename}_{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
+# class DefectChargeSpins(FromFile.GetChargesSpins, LogfileChargeStateKey):
+#     def __init__(self, name, i, file, indices):
+#         LogfileChargeStateKey.__init__(self, i)
+#         FromFile.GetChargesSpins.__init__(self, file)
+#         for index in indices:
+#             self.data4atomindex(index)
+#             if Core.UserWants.AnalysisWants == 'n':
+#                 self.string = str('{} {}, {}'.format(name, self.filestate, index))
+#             else:
+#                 self.string = str('{}, {}'.format(self.filestate, index))
+#             for n in 1,2:
+#                 exec(f'self.def_{self.filestatename}_{index}_pop{n}_charge = self.pop{n}_charge')
+#                 exec(f'self.def_{self.filestatename}_{index}_pop{n}_spin = self.pop{n}_spin')
+#                 exec(f'self.def_{self.filestatename}_{index}_pop{n}_beta_pop = self.pop{n}_beta_pop')
+#                 exec(f'self.def_{self.filestatename}_{index}_pop{n}_alpha_pop = self.pop{n}_alpha_pop')
 
-class DefectDataFrame(SortingChargeStatesOut, DefectChargeSpins, SetupDataFrame):
+
+class DefectDataFrame(SortingChargeStatesOut, FromFile.GetChargesSpins, LogfileChargeStateKey, SetupDataFrame):#DefectChargeSpins
     def __init__(self, answers, neutralname, neutralinp, neutralfile):
         SetupDataFrame.__init__(self)
-        SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
+        # SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
+        # DefectChargeSpins.__init__(self, neutralname, '-', neutralfile, self.indices)
+        # for index in self.indices:
+        LogfileChargeStateKey.__init__(self, '-')
+        FromFile.GetChargesSpins.__init__(self, neutralfile)
         for index in self.indices:
-            DefectChargeSpins.__init__(self, neutralname, '-', neutralfile, index)
-            string = str('{}, {}'.format(self.filestate, index))
-            self.columnstring.append(string)
+            self.string = str('{}, {}'.format(self.filestate, index))
+            self.columnstring.append(self.string)
+            self.data4atomindex(index)
             for n in 1, 2:
-                exec(f'self.chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
-                exec(f'self.spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
-                exec(f'self.popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
-                exec(f'self.popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+                exec(f'self.chargesM{n}.append(self.pop{n}_charge)') #self.def_{self.filestatename}_{index}_pop{n}_charge
+                exec(f'self.spinsM{n}.append(self.pop{n}_spin)') #self.def_{self.filestatename}_{index}_pop{n}_spin
+                exec(f'self.popAM{n}.append(self.pop{n}_beta_pop)')#self.def_{self.filestatename}_{index}_pop{n}_beta_pop
+                exec(f'self.popBM{n}.append(self.pop{n}_alpha_pop)')#self.def_{self.filestatename}_{index}_pop{n}_alpha_pop
+        FromFile.GetChargesSpins.changingbackclassvars()
+        SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
         for logfile, i in zip(list(self.logfiles), range(len(self.logfiles))):
             if logfile != "-":
+                LogfileChargeStateKey.__init__(self, i)
+                FromFile.GetChargesSpins.__init__(self, logfile)
                 for index in self.indices:
-                    DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
-                    string = str('{}, {}'.format(self.filestate, index))
-                    self.columnstring.append(string)
+                    #DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
+                    self.string = str('{}, {}'.format(self.filestate, index))
+                    self.columnstring.append(self.string)
+                    self.data4atomindex(index)
                     for n in 1, 2:
-                        exec(f'self.chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
-                        exec(f'self.spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
-                        exec(f'self.popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
-                        exec(f'self.popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+                        exec(f'self.chargesM{n}.append(self.pop{n}_charge)')#self.def_{self.filestatename}_{index}_pop{n}_charge
+                        exec(f'self.spinsM{n}.append(self.pop{n}_spin)')#self.def_{self.filestatename}_{index}_pop{n}_spin
+                        exec(f'self.popAM{n}.append(self.pop{n}_beta_pop)')#self.def_{self.filestatename}_{index}_pop{n}_beta_pop
+                        exec(f'self.popBM{n}.append(self.pop{n}_alpha_pop)')#self.def_{self.filestatename}_{index}_pop{n}_alpha_pop
+                FromFile.GetChargesSpins.changingbackclassvars()
         self.df = pd.DataFrame(
             [self.chargesM1, self.spinsM1, self.popAM1, self.popBM1, self.chargesM2, self.spinsM2, self.popAM2,
              self.popBM2],
@@ -140,48 +160,58 @@ class DefectDataFrame(SortingChargeStatesOut, DefectChargeSpins, SetupDataFrame)
         self.df.columns = pd.MultiIndex.from_tuples([('', x[0]) if pd.isnull(x[1]) else x for x in self.a])
 
 
-class ControlChargeSpins(PerfChargeSpins, SortingChargeStatesOut, DefectChargeSpins):
+class ControlChargeSpins(PerfChargeSpins, SortingChargeStatesOut, FromFile.GetChargesSpins, LogfileChargeStateKey):
     def __init__(self, answers):
         PerfChargeSpins.__init__(self, answers)
-        for index in self.indices:
-            string = str('{}, {}'.format(self.perfsubdir, index))
-            self.columnstring.append(string)
         for neutralname, file, subdir, neutralinp in zip(list(self.namesneutral),list(self.defneutral), list(self.neutralsubdir),
                                                    list(self.inpneutral)):
+            self.makingperfdata()
+            for index in self.indices:
+                string = str('{}, {}'.format(self.perfsubdir, index))
+                self.columnstring.append(string)
             print(subdir)
-            columnstring = self.columnstring
-            chargesM1 = self.chargesM1
-            spinsM1 = self.spinsM1
-            popAM1 = self.popAM1
-            popBM1 = self.popBM1
-            chargesM2 = self.chargesM2
-            spinsM2 = self.spinsM2
-            popAM2 = self.popAM2
-            popBM2 = self.popBM2
+            # columnstring = self.columnstring
+            # chargesM1 = self.chargesM1
+            # spinsM1 = self.spinsM1
+            # popAM1 = self.popAM1
+            # popBM1 = self.popBM1
+            # chargesM2 = self.chargesM2
+            # spinsM2 = self.spinsM2
+            # popAM2 = self.popAM2
+            # popBM2 = self.popBM2
             SortingChargeStatesOut.__init__(self, answers, neutralname, neutralinp)
 
+            LogfileChargeStateKey.__init__(self, '-')
+            FromFile.GetChargesSpins.__init__(self, file)
             for index in self.indices:
-                DefectChargeSpins.__init__(self, neutralname,'-', file, index)
-                columnstring.append(self.string)
+                # DefectChargeSpins.__init__(self, neutralname,'-', file, index)
+                self.string = str('{} {}, {}'.format(neutralname, self.filestate, index))
+                self.columnstring.append(self.string)
+                self.data4atomindex(index)
                 for n in 1,2:
-                    exec(f'chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
-                    exec(f'spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
-                    exec(f'popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
-                    exec(f'popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
+                    exec(f'self.chargesM{n}.append(self.pop{n}_charge)')  # self.def_{self.filestatename}_{index}_pop{n}_charge
+                    exec(f'self.spinsM{n}.append(self.pop{n}_spin)')  # self.def_{self.filestatename}_{index}_pop{n}_spin
+                    exec(f'self.popAM{n}.append(self.pop{n}_beta_pop)')  # self.def_{self.filestatename}_{index}_pop{n}_beta_pop
+                    exec(f'self.popBM{n}.append(self.pop{n}_alpha_pop)')  # self.def_{self.filestatename}_{index}_pop{n}_alpha_pop
+            FromFile.GetChargesSpins.changingbackclassvars()
             for logfile, i in zip(list(self.logfiles), range(len(self.logfiles))):
                 if logfile != "-":
+                    LogfileChargeStateKey.__init__(self, i)
+                    FromFile.GetChargesSpins.__init__(self, logfile)
                     for index in self.indices:
-                        DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
-                        columnstring.append(self.string)
+                        # DefectChargeSpins.__init__(self, neutralname, i, logfile, index)
+                        self.string = str('{} {}, {}'.format(neutralname, self.filestate, index))
+                        self.columnstring.append(self.string)
+                        self.data4atomindex(index)
                         for n in 1, 2:
-                            exec(f'chargesM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_charge)')
-                            exec(f'spinsM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_spin)')
-                            exec(f'popAM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_beta_pop)')
-                            exec(f'popBM{n}.append(self.def_{self.filestatename}_{index}_pop{n}_alpha_pop)')
-
+                            exec(f'self.chargesM{n}.append(self.pop{n}_charge)')  # self.def_{self.filestatename}_{index}_pop{n}_charge
+                            exec(f'self.spinsM{n}.append(self.pop{n}_spin)')  # self.def_{self.filestatename}_{index}_pop{n}_spin
+                            exec(f'self.popAM{n}.append(self.pop{n}_beta_pop)')  # self.def_{self.filestatename}_{index}_pop{n}_beta_pop
+                            exec(f'self.popBM{n}.append(self.pop{n}_alpha_pop)')  # self.def_{self.filestatename}_{index}_pop{n}_alpha_pop
+                    FromFile.GetChargesSpins.changingbackclassvars()
             # print(columnstring, '\n', chargesM1, '\n', spinsM1, '\n', popAM1, '\n', popBM1, '\n',  chargesM2, '\n', spinsM2, '\n', popAM2, '\n', popBM2)
-            df = pd.DataFrame([chargesM1, spinsM1, popAM1, popBM1, chargesM2, spinsM2, popAM2, popBM2],
-                              columns=columnstring, index=['Mulliken', '', '', '', 'Hirshfeld', '', '', ''])
+            df = pd.DataFrame([self.chargesM1, self.spinsM1, self.popAM1, self.popBM1, self.chargesM2, self.spinsM2, self.popAM2, self.popBM2],
+                              columns=self.columnstring, index=['Mulliken', '', '', '', 'Hirshfeld', '', '', ''])
             a = df.columns.str.split(', ', expand=True).values
             df.columns = pd.MultiIndex.from_tuples([('', x[0]) if pd.isnull(x[1]) else x for x in a])
             print(df)

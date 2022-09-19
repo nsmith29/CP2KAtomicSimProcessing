@@ -1,25 +1,57 @@
 import FromFile
 
+class GetEnergyBandGap:
+    gap = 'HOMO - LUMO gap'
+    energy = 'ENERGY| Total FORCE_EVAL'
+
 class GetChargesSpins:
     pop1 = 'Mulliken Population Analysis'
     pop2 = 'Hirshfeld Charges'
-    def __init__(self, logfile, atomindex):
-        self.index = atomindex
+    Pop1AnalysisStart = ''
+    Pop2AnalysisStart = ''
+    def __init__(self, logfile):
         self.pop1 = ''
         self.pop2 = ''
+        self.logfile = logfile
+        self.foundpop1 = False
+        self.foundpop2 = False
+
+        for variable in 'charge','spin','beta_pop','alpha_pop':
+            exec(f'self.pop1_{variable} = None')
+            exec(f'self.pop2_{variable} = None')
+
         log = open(logfile, 'r')
         lines = log.readlines()
         index = len(lines)
         for line in reversed(lines):
             if FromFile.GetChargesSpins.pop1 in line:
                 PopAnalysisStart = index
-                self.pop1 = PopAnalysisStart + int(self.index) + 1
-            if FromFile.GetChargesSpins.pop2 in line:
+                GetChargesSpins.pop1found(PopAnalysisStart)
+                self.foundpop1 = True
+            elif FromFile.GetChargesSpins.pop2 in line:
                 PopAnalysisStart = index
-                self.pop2 = PopAnalysisStart + int(self.index) + 1
-            index -=1
+                GetChargesSpins.pop2found(PopAnalysisStart)
+                self.foundpop2 = True
+            elif self.foundpop1 is True and self.foundpop2 is True:
+                break
+            else:
+                index -=1
         log.close()
-        log = open(logfile, 'r')
+
+    @classmethod
+    def pop1found(cls, popstart):
+        GetChargesSpins.Pop1AnalysisStart = int(popstart + 1)
+
+    @classmethod
+    def pop2found(cls, popstart):
+        GetChargesSpins.Pop2AnalysisStart = int(popstart + 1)
+
+    def data4atomindex(self, atomindex):
+        index = int(atomindex)
+        self.pop1 = int(GetChargesSpins.Pop1AnalysisStart) + index
+        self.pop2 = int(GetChargesSpins.Pop2AnalysisStart) + index
+
+        log = open(self.logfile, 'r')
         for position, line in enumerate(log):
             if position == self.pop1:
                 pop1_arr= line.split()
@@ -36,6 +68,10 @@ class GetChargesSpins:
         self.pop2_beta_pop = pop2_arr[5]
         self.pop2_alpha_pop = pop2_arr[4]
 
+    @classmethod
+    def changingbackclassvars(cls):
+        GetChargesSpins.Pop1AnalysisStart = ''
+        GetChargesSpins.Pop2AnalysisStart = ''
         # self.returnchargespins()
 
     # def returnchargespins(self):

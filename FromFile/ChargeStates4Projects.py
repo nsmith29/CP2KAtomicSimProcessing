@@ -67,18 +67,19 @@ class CategorisingChargeStates(SetupSortingCharged, FromFile.ChargeStateIdentifi
 class ProjectSortingIt(FromFile.CheckSameCalculationSettings):
     def __init__(self, name, statenames, statefiles, stateinputs, reference):
         self.file2return = []
-        inputs4return = []
+        self.inputs4return = []
         appendedJ = []
         for j in range(len(statenames)):
             if name == statenames[j]:
                 self.file2return.append(statefiles[j])
                 appendedJ.append(j)
-                inputs4return.append(stateinputs[j])
+                self.inputs4return.append(stateinputs[j])
             if len(self.file2return) >= 2:
-                for file, input, J in zip(list(self.file2return), list(inputs4return), list(appendedJ)):
+                for file, input, J in zip(list(self.file2return), list(self.inputs4return), list(appendedJ)):
                     FromFile.CheckSameCalculationSettings.__init__(self, reference, input)
                     if self.check == False:
                         self.file2return.remove(file)
+                        self.inputs4return.remove(input)
                         appendedJ.remove(J)
 
 
