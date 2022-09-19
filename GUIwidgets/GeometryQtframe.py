@@ -9,30 +9,48 @@ from PySide6.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 
-class WorkingOutGeometryData2Plot(DataProcessing.SubstitutionalGeometryDisplacement):
+class WorkingOutGeometryData2Plot(DataProcessing.MaxDisplacement, DataProcessing.SubstitutionalGeometryDisplacement, DataProcessing.SubsVacancyGeometryDisplacement):
     def __init__(self, suffix):
         self.Xdata = None
         self.Ydata = None
-        for i in range(len(Core.ProcessingControls.ProcessingWants)):
-            if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
-                followupAns = Core.ProcessingControls.Followups[i].split(',')
-                if followupAns[0] == 'substitutional':
-                    DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, followupAns[1], suffix)
-                    self.Xdata = self.tot_distance_sorted
-                    self.Ydata = self.tot_displacement_sorted
-
-            if Core.ProcessingControls.ProcessingWants[i] == 'test':
-                DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, 305, suffix)
+        if Core.ProcessingControls.ProcessingWants.find('test') != -1:
+            DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, 250, suffix)
+            self.Xdata = self.tot_distance_sorted
+            self.Ydata = self.tot_displacement_sorted
+        else:
+            if Core.ProcessingControls.DefectType == 'substitutional':
+                DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom[0], suffix)
                 self.Xdata = self.tot_distance_sorted
                 self.Ydata = self.tot_displacement_sorted
+            if Core.ProcessingControls.DefectType == 'subs-vacancy complex':
+                DataProcessing.SubsVacancyGeometryDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
+            if Core.ProcessingControls.DefectType == 'max displacement':
+                DataProcessing.MaxDisplacement.__init__(self, Core.ProcessingControls.DefectAtom, suffix)
+
+        # for i in range(len(Core.ProcessingControls.ProcessingWants)):
+        #     if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
+        #         followupAns = Core.ProcessingControls.Followups[i].split(',')
+        #         if followupAns[0] == 'substitutional':
+        #             DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, followupAns[1], suffix)
+        #             self.Xdata = self.tot_distance_sorted
+        #             self.Ydata = self.tot_displacement_sorted
+        #         if followupAns[0] == 'subs-vacancy complex':
+        #             DataProcessing.SubsVacancyGeometryDisplacement.__init__(self, followupAns[1], followupAns[2], suffix)
+        #         if followupAns[0] == 'max displacement':
+        #             DataProcessing.MaxDisplacement.__init__(self, followupAns[1], suffix)
+        #
+        #
+        #     if Core.ProcessingControls.ProcessingWants[i] == 'test':
+        #         DataProcessing.SubstitutionalGeometryDisplacement.__init__(self, 250, suffix)
+        #         self.Xdata = self.tot_distance_sorted
+        #         self.Ydata = self.tot_displacement_sorted
 
 class TestingGeometry(WorkingOutGeometryData2Plot, DataProcessing.SetUpGeometry):
     def __init__(self):
         DataProcessing.SetUpGeometry.__init__(self)
-        WorkingOutGeometryData2Plot.__init__(self, self.suffixs[0])
-        print(self.Xdata)
-        # print(" ")
-        print(self.Ydata)
+        for suffix in list(self.suffixs):
+            WorkingOutGeometryData2Plot.__init__(self, suffix)
+            print(suffix, self.tot_displacement_sorted2[-1], self.defect_atom)
 
 class DisplacementsPlotting(GUIwidgets.MplCanvas, WorkingOutGeometryData2Plot):
     def __init__(self, suffix, parent=None):

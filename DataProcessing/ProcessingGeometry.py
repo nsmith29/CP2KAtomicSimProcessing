@@ -2,7 +2,7 @@ import Core
 import FromFile
 import DataProcessing
 # import Presentation
-# import Graphics
+# import GraphicAnalysis
 import numpy as np
 
 class SetUpGeometry(FromFile.OnlyNeutralWanted):
@@ -24,9 +24,9 @@ class DefectDictionary(SetUpGeometry, FromFile.Name4Coordinate, FromFile.LastXYZ
     def __init__(self):
         SetUpGeometry.__init__(self)
         for subdir, suffix in zip(list(self.subdirs), list(self.suffixs)):
-            FromFile.LastXYZ.__init__(self, subdir)
-            X, Y, Z = np.loadtxt(self.new_xyz_file, skiprows=2, usecols=(1, 2, 3), unpack=True)
+            # FromFile.LastXYZ.__init__(self, subdir)
             FromFile.Name4Coordinate.__init__(self,subdir)
+            X, Y, Z = np.loadtxt(self.new_xyz_file, skiprows=2, usecols=(1, 2, 3), unpack=True)
             self.Create(suffix, X, Y, Z, self.atoms)
 
     @classmethod
@@ -145,16 +145,15 @@ class DifferenceInPosition:
 class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary, DifferenceInPosition):
     SubsGeoDisDataStore = dict()
     def __init__(self, atom_index, suf):
-        self.atom_index = int(atom_index)
+        self.atom_index = int(atom_index) - 1
         FetchGeometryFromPerfectDictionary.__init__(self)
 
         FetchGeometryFromDefectDictionary.__init__(self,suf)
-        index = self.atom_index - 1
-        self.defect_site_X = self.X[index]
-        self.defect_site_Y = self.Y[index]
-        self.defect_site_Z = self.Z[index]
+        self.defect_site_X = self.X[self.atom_index]
+        self.defect_site_Y = self.Y[self.atom_index]
+        self.defect_site_Z = self.Z[self.atom_index]
 
-        self.defect_atom = self.atoms[index]
+        self.defect_atom = self.atoms[self.atom_index]
 
         DifferenceInPosition.__init__(self, self.totatom, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
 
@@ -174,10 +173,21 @@ class VacancyGeometryDisplacement:
         e = 17
         print(e)
 
-class SubsVacancyGeometryDisplacement:
-    def __init__(self, atom_index):
-        e = 8
-        print(e)
+class SubsVacancyGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary):
+    def __init__(self, indices, suffix):
+
+        self.subs = int(indices[0]) - 1
+        self.vac = int(indices[1]) - 1
+        FetchGeometryFromPerfectDictionary.__init__(self)
+
+        self.vacX = self.perfX[self.vac]
+        self.vacY = self.perfY[self.vac]
+        self.vacZ = self.perfZ[self.vac]
+        FetchGeometryFromDefectDictionary.__init__(self, suffix)
+
+
+
+
 
 class InterVacancyGeometryDisplacement:
     def __init__(self, atom_index):

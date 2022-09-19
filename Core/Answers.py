@@ -48,25 +48,25 @@ class UserWants:
 
 class ProcessingControls:
     ProcessingWants = ''
-    Followups = ''
+    DefectType = ''
+    DefectAtom = ''
     Process_wants = ''
     def __init__(self, f):
         self._f = f
 
     @classmethod
-    def SavingOtherWants(cls, processing, followupQs):
+    def SavingOtherWants(cls, processing, typedefectQ):
         process_wants = []
         for want in list(processing):
             change = want.replace(' ', '_')
             process_wants.append(change)
 
         ProcessingControls.ProcessingWants = processing
-        ProcessingControls.Followups = followupQs
+        ProcessingControls.DefectType = typedefectQ[0]
+        ProcessingControls.DefectAtom = typedefectQ[1:]
         ProcessingControls.Process_wants = process_wants
 
-    @staticmethod
-    def CharSpinYes(followupAns):
-        action = DataProcessing.ControlChargeSpins(followupAns)
+
 
 
 

@@ -53,8 +53,7 @@ class Data4perfect(DataProcessing.NoAnalysisPerfect, DataProcessing.PerfDataFram
                      f'str(self.perfLUMO_alpha) + "  " + str(self.perfalpha_diff) + """\n""" + "          Beta spin -" + '
                      f'str(self.perfHOMO_beta) + "  " + str(self.perfLUMO_beta) + "  " + str(self.perfalpha_diff) + """\n""" ')
             if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
-                answers = Core.ProcessingControls.Followups[i]
-                DataProcessing.PerfDataFrame.__init__(self, answers)
+                DataProcessing.PerfDataFrame.__init__(self)
                 exec(f'self.analysisperf{i} = self.df.to_csv()')
 
 class DefectSubDirsOrdering(DataProcessing.SetUpPdos, DataProcessing.SetupChargeSpins):
@@ -104,13 +103,12 @@ class CollectingDefectPdosData(DataProcessing.NoAnalysisDefects):
 class CollectingDefectChargeSpinData(DataProcessing.DefectDataFrame):
     def __init__(self, subdir, j):
         exec(f'self.analysisdef{j} = None')
-        answers = Core.ProcessingControls.Followups[j]
         DataProcessing.SetupChargeSpins.__init__(self)
         subdirindex = self.neutralsubdir.index(subdir)
         neutralname = self.namesneutral[subdirindex]
         neutralinp = self.inpneutral[subdirindex]
         neutralfile = self.defneutral[subdirindex]
-        DataProcessing.DefectDataFrame.__init__(self, answers, neutralname, neutralinp, neutralfile)
+        DataProcessing.DefectDataFrame.__init__(self, neutralname, neutralinp, neutralfile)
         exec(f'self.analysisdef{j} = self.df.to_csv()')
 
 class Data4Defect(CollectingDefectPdosData, CollectingDefectChargeSpinData):
