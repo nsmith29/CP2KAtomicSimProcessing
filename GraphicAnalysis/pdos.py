@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 import DataProcessing
 import FromFile
-import Graphics
+import GraphicAnalysis
 
 class plotvariables:
     def __init__(self, dat):
@@ -37,7 +37,7 @@ class retry:
             self.tryAgain(defdat, check, j)
 
 
-class plotpdos(DataProcessing.YesAnalysis, FromFile.Kinds, FromFile.NameOfProject, plotvariables, Graphics.Colors, FromFile.LastXYZ, retry, FromFile.PdosScalingFactor):
+class plotpdos(DataProcessing.YesAnalysis, FromFile.Kinds, FromFile.NameOfProject, plotvariables, GraphicAnalysis.Colors, FromFile.LastXYZ, retry, FromFile.PdosScalingFactor):
     def __init__(self):
         DataProcessing.YesAnalysis.__init__(self)
         FromFile.Kinds.__init__(self, self.perfinpfile)
@@ -57,7 +57,7 @@ class plotpdos(DataProcessing.YesAnalysis, FromFile.Kinds, FromFile.NameOfProjec
                         exec(f'self.perf_{kind}_{self.s}_energy = self.energy')
                         exec(f'self.perf_{kind}_{self.s}_density = self.density')
                         k = j + 1
-                        Graphics.Colors.__init__(self, k)
+                        GraphicAnalysis.Colors.__init__(self, k)
                         if self.s == "alpha":
                             self.ax.plot(eval("self.perf_{}_{}_energy".format(kind, self.s)),
                                      eval("self.perf_{}_{}_density".format(kind,self.s)),
@@ -79,7 +79,7 @@ class plotpdos(DataProcessing.YesAnalysis, FromFile.Kinds, FromFile.NameOfProjec
                 check = str("/" + self.defatoms[j] + "_")
                 self.tryAgain(defdat, check, j)
 
-                Graphics.Colors.__init__(self, self.defk)
+                GraphicAnalysis.Colors.__init__(self, self.defk)
                 plotvariables.__init__(self, defdat)
                 if self.defkind in self.perfkindatoms:
                     exec(f'self.{suffix}_{self.defkind}_{self.s}_energy = self.energy')
