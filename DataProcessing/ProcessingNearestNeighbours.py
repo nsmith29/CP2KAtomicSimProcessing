@@ -27,14 +27,15 @@ class SetupStructure4pymatgen(DataProcessing.FetchGeometryFromPerfectDictionary,
 
 class NearestNeighbours:
     def __init__(self, structure, i):
-        self.defind = i - 1
+        self.defind = i
         self.nn_dict = CrystalNN(distance_cutoffs=(0.5, 1.5)).get_nn_info(structure, i)
+        print('dictionary for',i ,self.nn_dict)
 
     def returnlist(self):
         indices = []
         NN = []
         for j in range(len(self.nn_dict)):
-            bondingindex = int(self.nn_dict[j]['site_index']) + 1
+            bondingindex = int(self.nn_dict[j]['site_index'])
             NN.append(bondingindex)
         NN = np.sort(NN)
         for n in list(NN):

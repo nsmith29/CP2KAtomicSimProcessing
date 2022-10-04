@@ -22,20 +22,20 @@ class GetChargesSpins:
 
         log = open(logfile, 'r')
         lines = log.readlines()
-        index = len(lines)
+        index = len(lines) + 1
         for line in reversed(lines):
-            if FromFile.GetChargesSpins.pop1 in line:
+            index -= 1
+            if FromFile.GetChargesSpins.pop1 in line and self.foundpop1 is False:
                 PopAnalysisStart = index
                 GetChargesSpins.pop1found(PopAnalysisStart)
                 self.foundpop1 = True
-            elif FromFile.GetChargesSpins.pop2 in line:
+            elif FromFile.GetChargesSpins.pop2 in line and self.foundpop2 is False:
                 PopAnalysisStart = index
                 GetChargesSpins.pop2found(PopAnalysisStart)
                 self.foundpop2 = True
-            elif self.foundpop1 is True and self.foundpop2 is True:
-                break
-            else:
-                index-=1
+            if self.foundpop2 is True and self.foundpop1 is True:
+                self.foundpop2 = None
+                self.foundpop1 = None
         log.close()
 
     @classmethod
@@ -47,7 +47,7 @@ class GetChargesSpins:
         GetChargesSpins.Pop2AnalysisStart = int(popstart + 1)
 
     def data4atomindex(self, atomindex):
-        index = int(atomindex)
+        index = int(atomindex) + 1
         self.pop1 = int(GetChargesSpins.Pop1AnalysisStart) + index
         self.pop2 = int(GetChargesSpins.Pop2AnalysisStart) + index
 
