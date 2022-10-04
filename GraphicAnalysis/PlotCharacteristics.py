@@ -2,16 +2,63 @@ class Colors:
     def __init__(self, num):
         self.num = num
         self. colordict = {
-            'color1': "#76EEC6",
-            'color2': "#000000",
-            'color3': "#8A2BE2",
-            'color4': "#20B2AA",
-            'color6': "#FF34B3",
-            'color5': "#FF0000",
-            'color7': "#836FFF",
-            'color8': "#54FF9F",
-            'color9': "#FFFF00",
-            'color10': "#EE3A8C"
+            'color1': "#F0F8FF", # aliceblue
+            'color2': "#000000",  # black
+            'color3': "#FF7256",  # coral1
+            'color4': "#FFB90F", # darkgoldenrod1
+            'color5': "#00C957", # emeraldgreen
+            'color6': "#B22222", # firebrick
+            'color7': "#DCDCDC", # gainsboro
+            'color8': "#E0EEE0", # honeydrew2
+            'color9': "#CD5C5C", # indianred
+            'color10': "#8470FF", # lightslateblue
+            'color11': "#E6E6FA", # lavender
+            'color12': "#FF34B3",  # maroon1
+            'color13': "#BDFCC9", # mint
+            'color14': "#FF4500", # orangered1
+            'color15': "#98FB98", # palegreen
+            'color16': "#FF0000",  # red1
+            'color17': "#836FFF",  # slateblue1
+            'color18': "#40E0D0", # turquoise
+            'color19': "#EE3A8C",  # violetred2
+            'color20': "#808069", # warmgrey
+            'color21': "#76EEC6", # aquamarine2
+            'color22': "#8A2BE2",  # blueviolet
+            'color23': "#DC143C", # crimson
+            'color24': "#C1FFC1", # darkseagreen1
+            'color25': "#FCE6C9", # eggshell
+            'color26': "#FF7D40", # flesh
+            'color27': "#FFC125", # goldenrod1
+            'color28': "#8B3A62", # hotpink4
+            'color29': "#4B0082", #indigo
+            'color30': "#8B864E", # khaki4
+            'color31': "#20B2AA",  # lightseagreen
+            'color32': "#AB82FF", # mediumpurple
+            'color33': "#FFDEAD", # navajowhite1
+            'color34': "#808000", # olive
+            'color35': "#8B475D", # palevioletred4
+            'color36': "#FFC1C1", # rosybrown1
+            'color37': "#54FF9F",  # seagreen1
+            'color38': "#FFE1FF", # thistle1
+            'color39': "#EEDFCC", # antiquewhite2
+            'color40': "#E3CF57", # banana
+            'color41': "#6495ED", # cornflowerblue
+            'color42': "#BF3EFF", # darkorchid1
+            'color43': "#228B22", # forestgreen
+            'color44': "#FFFAF0", # foralwhite
+            'color45': "#ADFF2F", # greenyellow
+            'color46': "#838B83", # honeydew4
+            'color47': "#CDCDC1", # ivory3
+            'color48': "#FFF0F5", # lavenderblush
+            'color49': "#8B5F65", # lightpink4
+            'color50': "#03A89E", # manganeseblue
+            'color51': "#000080", # navy
+            'color52': "#EE9A00", # orange2
+            'color53': "#B0E0E6", # powderblue
+            'color54': "#4876FF", # royalblue1
+            'color55': "#FA8072", # salmon
+            'color56': "#EE5C42", # tomato2
+            'color57': "#FFFF00" # yellow1
         }
 
         self.colour = self.colordict.get(str("color{}".format(self.num)))
