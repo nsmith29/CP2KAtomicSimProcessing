@@ -87,6 +87,21 @@ class GetChargesSpins:
 # exec(f'{system}_{state}_energy = []')
 
 # # -------------------------------------- LOG
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # logfile = str("{}{}{}".format(output_file_hierarchy_directory, file, logname))
 # log = open(logfile, 'r')  ## open file name saved as logfile
 # index = 0
