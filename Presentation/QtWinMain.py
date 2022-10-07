@@ -1,6 +1,6 @@
 import matplotlib
 matplotlib.use('QtAgg')
-import Graphics
+import GraphicAnalysis
 import DataProcessing
 import PySide6
 from PySide6.QtCore import Qt, QSize
@@ -37,13 +37,13 @@ class MainWindowGUI(QMainWindow):
 #                                         Qt.LeftDockWidgetArea)
 #         dockWidgetCombo.setWidget(self.comboboxMain)
 #         self.addDockWidget(Qt.TopDockWidgetArea, dockWidgetCombo, Qt.Vertical)
-#         self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
+#         self.wfnFrame = GraphicAnalysis.WfnStructurePlotFrame(self)
 #
 #         self.setCentralWidget(self.wfnFrame)
 #
 #     def MainChoice(self):
 #         selected = self.comboboxMain.currentText()
 #         if [selected == suffix for suffix in list(DataProcessing.SetupWfnVars.listofsufs)]:
-#             self.wfnFrame = Graphics.WfnStructurePlotFrame(self)
+#             self.wfnFrame = GraphicAnalysis.WfnStructurePlotFrame(self)
 #             self.wfnFrame.AddWfnContainer(selected)
 #             self.setCentralWidget(self.wfnFrame)

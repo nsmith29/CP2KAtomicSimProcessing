@@ -1,13 +1,8 @@
-import sys
 import numpy as np
-import os
 import Core
-from PySide6.QtWidgets import QApplication
 import ase.io.cube as cube
 import FromFile
 import DataProcessing
-# from Presentation import MainWindowWfn
-# import Graphics
 
 
 class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
@@ -70,18 +65,16 @@ class SetupWfnVars(FromFile.OnlyNeutralWanted, DataProcessing.PdosMOprocessing):
                 entry['BETA'] = d
         SetupWfnVars.wfnDataStore[string] = entry
 
-class ReadingConvertingCube:
-    def __init__(self, suffix, subdir):
-        self.suffix = suffix
-        self.subdir= subdir
-        wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(self.suffix))]["BETA"]['LUMO']
-        data, atoms = cube.read_cube_data(wfn)
-        mn = data.min()
-        mx = data.max()
-
-        OptsContours = 4
-        n = int(OptsContours)
-        d = (mx - mn) /n
-        countours = np.linspace(mn + d/ 2, mx - d / 2, n).tolist()
+# class ReadingConvertingCube:
+#     def __init__(self, suffix, spinstate, wavefunction):
+#         wfn = DataProcessing.SetupWfnVars.wfnDataStore[str("{}".format(suffix))][str("{}".format(spinstate))][str("{}".format(wavefunction))]
+#         self.data, self.atoms = cube.read_cube_data(wfn)
+#         mn = self.data.min()
+#         mx = self.data.max()
+#
+#         OptsContours = 4
+#         n = int(OptsContours)
+#         d = (mx - mn) /n
+#         self.countours = np.linspace(mn + d/ 2, mx - d / 2, n).tolist()
 
 #

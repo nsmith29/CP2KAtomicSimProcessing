@@ -1,4 +1,4 @@
-from GUIwidgets.MayaviQWidget import MayaviWfnQWidget, Visualization, MayaviGEOQWidget, VisualizationGEO
+from GUIwidgets.MayaviQWidget import MayaviWfnQWidget, VisualizationWFN, MayaviGEOQWidget, VisualizationGEO, MayaviWidgetBlank
 from GUIwidgets.WavefunctionQtframe import WfnStructurePlotFrame
 from GUIwidgets.MatlibplotQt import MplCanvas
 from GUIwidgets.GeometryQtframe import StructurePlotFrame, WorkingOutGeometryData2Plot, DisplacementsPlotting, TestingGeometry

@@ -9,7 +9,7 @@ from DataProcessing.ProcessingGeometry import DefectDictionary, SetUpGeometry, p
 
 from DataProcessing.ProcessingNearestNeighbours import SetupStructure4pymatgen, NearestNeighbours
 
-from DataProcessing.ProcessingWfn import SetupWfnVars, ReadingConvertingCube
+from DataProcessing.ProcessingWfn import SetupWfnVars
 
 from DataProcessing.ProcessingChargesSpins import ControlChargeSpins,  PerfChargeSpins, \
      PerfDataFrame, SetupChargeSpins, SetupDataFrame, DefectDataFrame, LogfileChargeStateKey
