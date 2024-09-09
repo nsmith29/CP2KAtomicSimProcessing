@@ -1,215 +1,411 @@
+#!/usr/bin/env python3
+
+#   Main python execution file of CP2KAtomicSimProcessor package
+#   -----------------------------------------------------------
+#   Usage:
+#
+#   -----------------------------------------------------------
+#   Author: Niamh Smith; E-mail: niamh.smith.17 [at] ucl.ac.uk
+#   Date: 05/08/2022; 11/08/2022 [multiprocessing implementation update]; 15/08/2022 [Debugging update]; 20/08/2022
+#   [inheritance testing]; 23/08/2022 [update for PDOS, Charge+Spin, and Substitutional defect geometry]; 19/09/2022
+#   [update for user inputs]; /08/2024 [upgrade of entire package]
+
 import os
 import sys
+import time
+import threading as th
+import queue
+import json
 import multiprocessing as mp
+import multiprocessing.pool
 import Core
-import GUIwidgets
-import Presentation
+from Core.Messages import bcolors, ErrorMessages, SlowMessageLines
 import DataProcessing
-import GraphicAnalysis
 
+
+def save_executables_path(package_path):
+    """
+        Save file path of directory holding all unix executable files used by CP2KAtomicSimProcessor
+
+        Inputs:
+            package_path(os.path): File path to CP2KAtomicSimProcessor directory.
+    """
+    Core.Directories_Search.executables_address = os.path.join(package_path,"Executables")
+
+package_path = os.getcwd()  # before os.chdir used, current working directory will be within CP2KAtomicSimProcessor
+save_executables_path(package_path)
+
+# suedo current working directory
 os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+cwd = os.getcwd() # save os.path set by os.chdir command above as a variable
 
 class Start:
-    PerfectSubdir = ''
-    DefectSubdir = ''
-    ChemicalPotSubdir = ''
-    def __init__(self, *argv):
-        if len(sys.argv) == 5:
-            perf_subdir = sys.argv[1]
-            def_subdir = sys.argv[2]
-            chempot_subdir = sys.argv[3]
-            Core.UserArguments(perf_subdir, def_subdir,chempot_subdir)
-            check = self.check_users_wants()
+    """
+        Processing command line arguments from user upon running of MAIN.py script.
 
-        elif len(sys.argv) >= 6:
-            perf_subdir = sys.argv[1]
-            def_subdir = sys.argv[2]
-            chem_pot_subdir = sys.argv[3]
+        Class definitions
+            test(dict)      : Dictionary of valid keywords for argument four to test whether the 4th commandline argument
+                              given by user is a valid keyword.
 
-            if sys.argv[4] == 'only':
-                self.keywrd = sys.argv[4]
-                if len(sys.argv) == 6:
-                    self.only = sys.argv[5]
-                else:
-                    self.only = []
-                    for i in range(5, len(sys.argv)):
-                        n = sys.argv[i]
-                        self.only.append(n)
-                Arguments = Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir)
-                Arguments.OnlyStated(self.only)
-            elif sys.argv[4] == 'except':
-                self.keywrd = sys.argv[4]
-                if len(sys.argv) == 6:
-                    self.expt = sys.argv[5]
-                else:
-                    self.expt = []
-                    for i in range(5, len(sys.argv)):
-                        n = sys.argv[i]
-                        self.expt.append(n)
-                Arguments = Core.UserArguments(perf_subdir, def_subdir, chem_pot_subdir)
-                Arguments.ExceptionStated(self.expt)
-            check = self.check_users_wants()
+            questions(dict) : Dictionary of questions to ask the user within self.check_users_wants().
 
-        else:
-            print(f"{bcolors.FAIL}Wrong number of or invalid arguments!")
-            print(f"{bcolors.WARNING}Valid usage includes:")
-            print(f"{bcolors.ENDC}{bcolors.BOLD}./MAIN.py perf_struc_subdir_name defect_struc_subdir_name chem_pot_"
-                  f"subdir_name all")
-            print(
-                "./MAIN.py perf_struc_subdir_name defect_struc_subdir_name chem_pot_subdir_name only str_in_defect_"
-                "subsubdir_name")
-            print(
-                f"./MAIN.py perf_struc_subdir_name defect_struc_subdir_name chem_pot_subdir_name except str_in_defect"
-                f" subsubdir_name{bcolors.ENDC}")
+            options(list)   : List of the methods of data processing the user can choose from.
 
+    """
+    test = {"all":True,
+            "except":True,
+            "only":True}
 
-    def check_users_wants(self):
-        print(f"{bcolors.OKCYAN}Please state the types of defect(s) being studied and the associated atomic index/indices [index 1st atom in .xyz file as 1] of")
-        print(f" this defect in format'{bcolors.BOLD}defect type, atom index/indices{bcolors.ENDC}{bcolors.OKCYAN}' for subs-vacancy put index of substituted atom first.")
-        typedefectQ = input(f"{bcolors.OKCYAN}Defects type options include: {bcolors.BOLD}substitutional{bcolors.ENDC}"
-                          f"{bcolors.OKCYAN}, {bcolors.BOLD}interstitional{bcolors.ENDC}{bcolors.OKCYAN}, "
-                          f"{bcolors.BOLD}vacancy{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.OKCYAN}subs-vacancy "
-                          f"complex{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.BOLD}inter-vacancy complex{bcolors.ENDC}"
-                          f"{bcolors.OKCYAN}: {bcolors.ENDC}")
-        typedefectQ = typedefectQ.split(', ')
+    questions = {"Q1":f"\n{bcolors.QUESTION}Which results types would you like to process?{bcolors.ENDC}", # 46
+                 "Q2":f"\n{bcolors.QUESTION}Would you like to perform data analysis?({bcolors.OKCYAN}Y/N{bcolors.QUESTION})" 
+                      f"{bcolors.ENDC}",  # 45
+                 "Q2fup1":f"\n{bcolors.QUESTION}Would you like to create a GUI to display results?({bcolors.OKCYAN}Y/N"
+                          f"{bcolors.QUESTION}){bcolors.ENDC}",  # 55
+                 "Q2fup2":f"\n{bcolors.QUESTION}Would you like to overwrite this file?({bcolors.OKCYAN}Y/N"
+                          f"{bcolors.QUESTION}){bcolors.ENDC}"}  # 43
 
-        print(f"{bcolors.OKGREEN}Which results would you like to process?")
-        processing = input(
-            f"{bcolors.ENDC}Results options include: {bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges "
-            f"and spins{bcolors.ENDC}, {bcolors.BOLD}charge transition levels{bcolors.ENDC}, {bcolors.BOLD}geometry"
-            f"{bcolors.ENDC}, {bcolors.BOLD}IPR{bcolors.ENDC}, {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn"
-            f"{bcolors.ENDC}, {bcolors.BOLD}work function{bcolors.ENDC} : ")
-        while all(x not in processing for x in ["wfn", "geometry", "band structure", "work function", "IPR", "pdos",
-                               "charges and spin", "charge transition levels", "test"]):
-            print(f"{bcolors.FAIL}Error! {bcolors.WARNING}Invalid results type stated, valid methods to choose from "
-                  f"include:{bcolors.ENDC}{bcolors.BOLD}band structure{bcolors.ENDC}, {bcolors.BOLD}charges and spins{bcolors.ENDC},"
-            f"{bcolors.BOLD}charge transition levels{bcolors.ENDC}, {bcolors.BOLD}geometry{bcolors.ENDC}, {bcolors.BOLD}"
-                  f"IPR{bcolors.ENDC}, "
-            f" {bcolors.BOLD}pdos{bcolors.ENDC}, {bcolors.BOLD}wfn{bcolors.ENDC}, {bcolors.BOLD}work function"
-                  f"{bcolors.ENDC}: ")
-            processing = input(f"{bcolors.OKGREEN}Which results would you like to process?: {bcolors.ENDC}")
+    options = ("band structure", "charges and spins", "charge transition levels", "geometry", "IPR", "PDOS", "WFN",
+               "work function", "test") # 14, 17, 24, 8, 3, 4, 3, 13, 4
 
-        # self.followupQs = []
-        processing = processing.split(', ')
-        # for i in range(len(processing)):
-        #     if processing[i].find('band structure') != -1:
-        #         followup3 = input(f"{bcolors.OKCYAN}What version of CP2K were calculations conducted with (i.e. CP2K "
-        #                           f"v8.1)?: {bcolors.ENDC}")
-        #         self.followupQs.append(followup3)
-        #     if processing[i].find('charges and spin') != -1:
-        #         followup1 = input(f"{bcolors.OKCYAN}Please state the indices of nearest atomic neighbours surrounding "
-        #                           f"defect and the index of the defect [index 1st atom in .xyz file as 1]:{bcolors.ENDC} ")
-        #         self.followupQs.append(followup1)
-        #     if processing[i].find('charge transition levels') != -1:
-        #         followup4 = input(f"{bcolors.OKCYAN}Please state the charge states you have investigated ({bcolors.BOLD}e.g."
-        #                           f" 0, -2, etc{bcolors.ENDC}{bcolors.OKCYAN}): {bcolors.ENDC} ")
-        #         self.followupQs.append(followup4)
-        #     if processing[i].find('geometry') != -1:
-        #         print(f"{bcolors.OKCYAN}Please state the types of defect(s) being studied and the associated atomic index/indices [index 1st atom in .xyz file as 1] of")
-        #         print(f" this defect in format'{bcolors.BOLD}defect type, atom index/indices{bcolors.ENDC}{bcolors.OKCYAN}' for subs-vacancy put index of substituted atom first.")
-        #         followup5 = input(f"{bcolors.OKCYAN}Defects type options include: {bcolors.BOLD}substitutional{bcolors.ENDC}"
-        #                           f"{bcolors.OKCYAN}, {bcolors.BOLD}interstitional{bcolors.ENDC}{bcolors.OKCYAN}, "
-        #                           f"{bcolors.BOLD}vacancy{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.OKCYAN}subs-vacancy "
-        #                           f"complex{bcolors.ENDC}{bcolors.OKCYAN}, {bcolors.BOLD}inter-vacancy complex{bcolors.ENDC}"
-        #                           f"{bcolors.OKCYAN}: {bcolors.ENDC}")
-        #         self.followupQs.append(followup5)
-        #     if processing[i].find('IPR') != -1:
-        #         followup2 = input(f"{bcolors.OKCYAN}Are your calculation spin polarised({bcolors.BOLD}y/n{bcolors.BOLD}"
-        #                           f"{bcolors.OKCYAN})?: {bcolors.ENDC}")
-        #         self.followupQs.append(followup2)
-        #     if processing[i].find('pdos') != -1:
-        #        self.followupQs.append('-')
-        #     if processing[i].find('wfn') != -1:
-        #        self.followupQs.append('-')
-        #     if processing[i].find('work function') != -1:
-        #         self.followupQs.append('-')
+    def __init__(self):
+        """
+        Decides which code path to take, given number of arguments given by user.
 
-        print(f"{bcolors.OKGREEN}Would you like to perform data analysis({bcolors.BOLD}y/n{bcolors.ENDC}"
-              f"{bcolors.OKGREEN})?")
-        analysis = str(input(f"{bcolors.ENDC}Selecting {bcolors.BOLD}'n'{bcolors.ENDC} will generate processed_data.csv"
-                             f" with containing data asked to be processed: "))
-        while "wfn" in processing and 'y' not in analysis:
-            print(f"{bcolors.FAIL}Error! {bcolors.WARNING}Results asked to be processed include {bcolors.BOLD}wfn"
-                  f"{bcolors.ENDC}: {bcolors.WARNING}these results can not be displayed in a csv file and can "
-                  f"only be analysed.")
-            print(f"{bcolors.ENDC}If you do not wish for analysis to be performed on the other results you have asked "
-                  f"to be processed, please press {bcolors.BOLD}Crt+C{bcolors.ENDC} now")
-            analysis = str(input(f"Overwise press {bcolors.BOLD}y{bcolors.ENDC}: {bcolors.OKGREEN}Would you like to "
-                                 f"perform data analysis({bcolors.BOLD}y/n{bcolors.ENDC}{bcolors.OKGREEN})"
-                                 f"?{bcolors.ENDC}"))
+        Compulsory arguments given by user should represent the following info
+            argv[1](str)   : name of directory containing CP2K output files for the perfect defect-free material
+                             structure.
+            argv[2](str)   : name of parent directory of particular type of defect studied within material which contains
+                             the subdirectories of CP2K output files for each specific defect calculation run.
+            argv[3](str)   : name of parent directory holding subdirectories containing CP2K output files for individual
+                             calculated reference chemical potentials for host and/or impurity elements within material
+                             being studied.
+            argv[4](str)   : keyword of either 'all', 'except', or 'only'.
+        Optional argument to be included by user, if argv[4] is except or only, should represent the following info
+            argv[5:](str)  : each argument from the 6th argument onwards should be the name of a specific subdirectory
+                             within the parent directory named in argv[2].
+        """
 
-        if analysis == 'y':
-            print(f"{bcolors.OKGREEN}Would you like to create a GUI to display results({bcolors.BOLD}y/n{bcolors.ENDC}"
-                  f"{bcolors.OKGREEN})?")
-            display = input(f"{bcolors.ENDC}Selecting {bcolors.BOLD}'n'{bcolors.ENDC} will generate png files of "
-                            f"analysed results: ")
-
-
-        elif analysis == 'n':
-            display = 'n'
-            print(f"{bcolors.OKBLUE}If processed_data.csv already exists, data processed in this run will be appended "
-                  f"to file")
-            overwrite = input(f"If you would like to overwrite the file please type {bcolors.BOLD}'overwrite'"
-                              f"{bcolors.ENDC}{bcolors.OKBLUE}, else type {bcolors.BOLD}'ok'{bcolors.ENDC}: ")
-            if overwrite == 'overwrite':
-                Presentation.csvfile().Overwrite()
-            elif overwrite == 'ok':
-                Presentation.csvfile().Append()
-
-
-        Core.UserWants(analysis, display)
-        Core.ProcessingControls.SavingOtherWants(processing, typedefectQ)
-
-class Process(mp.Process):
-    def __init__(self, *args, **kwargs):
-        mp.Process.__init__(self, *args, **kwargs)
-
-    def run(self):
+        # testing whether commandline arguments 1-4 given by user trigger any error codes.
         try:
-            mp.Process.run(self)
-        except TypeError:
-                pass
+            keywrd = str(sys.argv[4])  # test whether correct number of arguments has been given,
+            testkeywrd = Start.test[keywrd]
+            # test whether strs given in argvs 1, 2, and 3 correspond to actual directories.
+            for i in 1,2,3:
+                os.chdir(os.path.join(cwd,str(sys.argv[i])))  # test the existence of directory names given as strings
+                                                              # in command arguments`
+            os.chdir(cwd)  # reset current working directory back to directory set on line 22.
 
-if __name__ =='__main__':
-    Start(*sys.argv)
-    if Core.UserWants.DisplayWants == 'n':
-        if Core.UserWants.AnalysisWants == 'n':
-            pro = Process(target=Presentation.Printing2CSV())
-            pro.start()
+        # execution of error exceptions.
+        except IndexError:
+            ErrorMessages.Main_IndexError()
+            sys.exit(1)
+        except KeyError:
+            ErrorMessages.Main_KeyError(keywrd)
+            sys.exit(1)
+        except FileNotFoundError as err:
+            ErrorMessages.Main_FileNotFoundError(err,i)
+            sys.exit(1)
+
         else:
-            for i in range(len(Core.ProcessingControls.ProcessingWants)):
-                if Core.ProcessingControls.ProcessingWants[i] == 'test':
-                    pro0 = Process(target=DataProcessing.SetupChargeSpins())#target=GUIwidgets.TestingGeometry())
-                    pro0.start()
-                if Core.ProcessingControls.ProcessingWants[i] == 'pdos':
-                    pro1 = Process(target=GraphicAnalysis.plotpdos()) #
-                    pro1.start()
-                if Core.ProcessingControls.ProcessingWants[i] == 'wfn':
-                    pro2 = Process(target=Presentation.WFNGUI())
-                    pro2.start()
-                if Core.ProcessingControls.ProcessingWants[i] == 'charges and spins':
-                    followupAns = Core.ProcessingControls.DefectType
-                    pro3 = Process(target=DataProcessing.ControlChargeSpins())
-                    pro3.start()
-                if Core.ProcessingControls.ProcessingWants[i] == 'geometry':
-                    pro4 = Process(target=Presentation.geometryGUI())
-                    pro4.start()
-                if Core.ProcessingControls.ProcessingWants[i] == 'charge transition levels':
-                    pro5 = Process(target=DataProcessing.CTLsetup())
-                    pro5.start()
-                    # followupAns = Core.ProcessingControls.Followups[i].split(',')
-                    # pro4 = Process(target=Core.ProcessingControls.GeometryChosen(followupAns))
-                    # pro4.start()
+            Arguments = Core.UArg(sys.argv[1], sys.argv[2],sys.argv[3])  # saving directory str given by user
+                                                                         # for 1st 3 arguments.
+            if keywrd != 'all':
+                if len(sys.argv) == 6:  # single specific defect subdirectory given as final argument.
+                    defect = [sys.argv[5]]
+                else:  # multiple specific defect subdirectories given after 5th argument.
+                    defect = []
+                    for i in range(5, len(sys.argv)):
+                        defect.append(sys.argv[i])  # creation of list of specific defect subdirectories given by user.
+                if keywrd == 'only':
+                    Arguments.OnlyStated(defect)  # saving defect subdirectory name(s) and enacting setting for data
+                                                  # processing of only subdirectories named.
+                elif keywrd == 'except':
+                    Arguments.ExceptionStated(defect)  # saving defect subdirectory name(s) and enacting settings for
+                                                       # data processing of all subdirs except subdirs named.
+        self.stop, t = None, time.time()
 
+        # multithreading set up
+        q = queue.Queue()  # to pass information between threads.
+        lock = th.Lock()  # to block simultaneous printing of text from multiple threads.
+
+
+        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, [], True))  # printing '-----' across screen while
+                                                                               # downtime buffer happening in
+                                                                               # check_users_wants
+
+        t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))  # finding all os.paths() for
+                                                                                 # directories/subdirectories with CP2K
+                                                                                 # results to be included in execution
+                                                                                 # of programme.
+        t2 = th.Thread(target=self.check_users_wants, args=(q, lock))
+        t0.start()
+        t1.start()
+        t2.start()
+        t0.join()
+        t2.join()
+        t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock,0.06))  # printing message for user and '-----' across
+                                                                          # screen while thread t1 finishes.
+        t_.start()
+        t_.join()
+        t1.join()
+
+        if self.stop is True: # so that if user uses 'only' and one of the directories doesn't exit in parent
+                              # directory program will stop.
+             sys.exit(1)
+
+        print("done in",time.time()-t)
+
+    def check_users_wants(self, q, lock):
+        """
+            Checking conditions are upheld and no error codes are triggered before continuing to ask the user questions.
+            Inputs:
+                q(queue.Queue) : Shared between this function and function Core.Directories_Search.finding_ to allow
+                                 the passing of information from Core.Directories_Search.finding_ to this function
+                                 related to the triggering of a FileNotFoundError if certain subdirectories singled out
+                                 by user don't exist.
+
+                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+                                 blocks the ability of any other thread to print until the lock has finished the
+                                 printing commands within the current with statement it has acquired and is released.
+        """
+        if Core.UArg.Only is True:
+            time.sleep(2.75)  # provide buffer downtime for thread in the event that a given subdirectory for 'only'
+                              # can't be found and an error is flagged.
+            while q.empty() is False:
+                item = q.get()
+                if item == "sys.exit(1)":  # if user uses 'only' and one of the directories doesn't exit in parent
+                                           # directory then q will be sent an item to trigger the program to stop & end.
+                    self.stop = True
+                    return
+            else:
+                self.Questions2Ask(lock)
+        else:
+            self.Questions2Ask(lock)
+
+    def Questions2Ask(self, lock):
+        """
+            Asking the user base questions to gain understanding of how user would like the programme to do.
+
+            Originally a part of check_users_wants, but split off to avoid code repetition while still completing the
+            execution of asking the user questions about what they'd like the programme to do, if no errors are
+            triggered by the commandline arguments.
+
+            Inputs:
+                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
+                                blocks the ability of any other thread to print until the lock has finished the printing
+                                commands within the current with statement it has acquired and is released.
+        """
+        # Question one
+        text = str(Start.questions["Q1"]+"{bcolors.OKBLUE}\nResults options include: {bcolors.OKCYAN}"+
+                           ', '.join(Start.options[0:6])+"                              "+
+                          ', '.join(Start.options[6:9]))
+        SlowMessageLines(text, lock)  # pass text and lock to function to print each line of question at a steady pace
+                                      # when lock is next unreleased and available.
+        processing = input()
+        try:
+            for entry in processing.split(', '):
+                Start.options.index(entry)
+        except ValueError:
+            ErrorMessages.Main_ValueError1(Start.options, lock)
+            SlowMessageLines(Start.questions["Q1"], lock)
+            processing = input()
+        if processing.find(','):
+            processing = processing.split(', ')
+        else:
+            processing = [processing]
+        t3 = th.Thread(target=Core.ProcessCntrls.SavingOtherWants, args=(processing,))  # saving users answer for what
+                                                                                        # results they'd like
+                                                                                        # processing.
+        t3.start()
+        t3.join()
+
+        # Question two
+        text = str(Start.questions["Q2"] + "{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'{bcolors.OKBLUE} "
+                                           "will generate processed_data.txt which will contain data asked to be "
+                                           "processed:")
+        SlowMessageLines(text, lock)
+        analysis = str(input()).upper()
+        try:
+            if analysis not in ['Y', 'N']:
+                raise ValueError
+            while "WFN" in processing and 'Y' not in analysis:
+                raise NotImplementedError
+        except ValueError:
+            ErrorMessages.Main_ValueError2(lock)
+            SlowMessageLines(Start.questions["Q2"], lock)
+            analysis = str(input()).upper()
+        except NotImplementedError:
+            ErrorMessages.Main_NotImplementedError(lock)
+            SlowMessageLines(Start.questions["Q2"], lock)
+            analysis = str(input()).upper()
+
+        # Follow-up Questions to Question 2
+        if analysis == 'Y':
+            try:
+                text = str(Start.questions["Q2fup1"]+"{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'"
+                                                     "{bcolors.OKBLUE} will generate png files of analysed "
+                                                     "results: ")
+                SlowMessageLines(text, lock)
+                display = str(input()).upper()
+                if analysis not in ['Y', 'N']:
+                    raise ValueError
+            except ValueError:
+                ErrorMessages.Main_ValueError2(lock)
+                SlowMessageLines(Start.questions["Q2fup1"], lock)
+                display = str(input()).upper()
+
+            Core.UserWants.appendVoverwrite('N','N')
+
+        elif analysis == 'N':
+            try:
+                text = str("{bcolors.OKBLUE}If processed_data.txt already exists, data processed in this run will"
+                  f" be appended to file\n"+Start.questions["Q2fup2"])
+                SlowMessageLines(text)
+                overwrite = str(input()).upper()
+                if analysis not in ['Y', 'N']:
+                    raise ValueError
+            except ValueError:
+                ErrorMessages.Main_ValueError2(lock)
+                SlowMessageLines(Start.questions["Q2fup2"], lock)
+                overwrite = str(input()).upper()
+
+            if overwrite == 'Y':
+                Core.UserWants.appendVoverwrite('N', 'Y')
+            else:
+                Core.UserWants.appendVoverwrite('Y', 'N')
+
+            display = 'N'
+
+        Core.UserWants.Save(analysis, display) # saving users wants for analysing and displaying the data.
+
+
+
+class ProcessNoDaemonProcess(mp.Process):
+    """
+        Modified version of mp.Process specific for this package to make mp.Pool() non-daemonic child processes.
+
+        Daemon attributes will always be turned as False.
+
+        Inheritance:
+            mp.Process() :
+    """
+    @property
+    def daemon(self):
+        return False
+
+    @daemon.setter
+    def daemon(self, value):
+        pass
+
+
+
+class PoolNoDaemonProcess(mp.pool.Pool):
+    """
+        Modified version of mp.pool.Pool specific for this package for mp.Pool() non-daemonic workers.
+
+        Inheritance:
+            mp.pool.Pool() :
+    """
+
+    def Process(self, *args, **kwargs):
+        proc = super(PoolNoDaemonProcess, self).Process(*args,**kwargs)
+        proc.__class__ = ProcessNoDaemonProcess
+
+        return proc
+
+
+class Rooting:
+    """
+        Rooting of mp.Pool() child process to specific code stem for wanted result processing method of child process.
+
+        Wanted entry point function is determined via evaluation and execution of the item value str corresponding to
+        the item key str within optdict which matches the input str value of the child worker process.
+
+        Class definitions:
+            optdict(dict) : Dictionary of specific entry point functions for each implemented result processing method.
+
+        Inputs:
+            want(str)     : str assigned to specific mp.Pool() child process accessing class which equates to the
+                            specific result processing method assigned to the child worker process out of the result
+                            processing methods chosen by user.
+    """
+
+    optdict= {"band structure": None,
+              "charges and spins": "DataProcessing.CntrlChrgSpns",
+              "charge transition levels": None, #DataProcessing.CTLsetup()
+              "geometry": None, #"Presentation.geometryGUI",
+              "IPR": None,
+              "PDOS": None, # "GraphicAnalysis.plotpdos",
+              "WFN": None, # "Presentation.WFNGUI",
+              "work function": None,
+              "test": None}
+
+    def __init__(self, want):
+        run = eval(str("{}()".format(Rooting.optdict.get(want))))
+
+
+class resave_:
+    """
+        Ensuring established data collected from user inputs is accessible within the shared memory of the mp.Pool().
+
+        Memory saved or created outside a mp.Pool() cannot be accessed within the mp.Pool() environment. Therefore, all
+        class definition dictionaries which have been populated or updated since the user executed the commandline
+        argument calling this script will be reset to their defaults upon starting to run the mp.Pool(). As this
+        function is accessed from within the mp.Pool(), important class definition dictionaries can be re-saved back
+        into their same class definitions within the mp.Pool().
+
+        Inputs:
+            Address_Book(dict)  : Outside mp.Pool() version of populated dictionary,
+                                  Core.Directories_Search.Address_book, of os.path strs for needed perfect and defect
+                                  structure CP2K output files and subdirectories for results processing.
+
+            exectables(os.path) : Outside mp.Pool() version of saved file os.path,
+                                  Core.Directories_Search.executables_address, for the 'Executables' directory within
+                                  the CP2KAtomicSimProcessor package.
+
+            CalcKeys(dict)      : Outside mp.Pool() version of populated dictionary,
+                                  Core.Directories_Search.Dir_Calc_Keys, of list items of nested dictionary keys within
+                                  the Core.Directories_Search.Address_book/Core.ProcessingControls.Processing_Results
+                                  dictionaries for easier iterations through each specific calculation.
+
+            Results(dict)       : Outside mp.Pool() version of half-populated dictionary,
+                                  Core.ProcessingControls.Processing_Results, of specific calculations to be further
+                                  populated with the fully calculated products of user wanted result processing methods.
+    """
+
+    def __init__(self, f):
+        self._f = f
+
+    @staticmethod
+    def RsvAddrss4mp(Address_Book, exectables, CalcKeys, Results):
+
+        Core.Directories_Search.Address_book = Address_Book
+        Core.Directories_Search.executables_address = exectables
+        Core.Directories_Search.Dir_Calc_Keys = CalcKeys
+        Core.ProcessCntrls.ProcessResults = Results
+
+
+# Entry point of code for multiprocessing.
+if __name__ =='__main__':
+    Start()
+    # limiting used cpu's within pool available to child processes to 2/3rd of the available cpu's of the local machine
+    # so that there are still cpu's available for grandparent processes to use further in within the code.
+    CPUs2use = int(os.cpu_count() * 2/3)
+    p = PoolNoDaemonProcess()  # CPUs2use
+
+    setup = p.apply(resave_.RsvAddrss4mp, [Core.Directories_Search.Address_book,
+                                           Core.Directories_Search.executables_address,
+                                           Core.Directories_Search.Dir_Calc_Keys,
+                                           Core.ProcessCntrls.ProcessResults])  # conducting a single worker
+                                                                                         # processes which blocks other
+                                                                                         # workers from being conducted
+                                                                                         # so that important data can be
+                                                                                         # accessed by the pool.
+    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)    # given each available CPU a separate process which
+                                                                    # corresponds to completing the code needed to enact
+                                                                    # each results processing method selected by user.
+                                                                    # by feeding each entry in the ProcessingWants list
+                                                                    # to the class Rooting.
+    p.close()
+    p.join()
 
