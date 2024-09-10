@@ -405,8 +405,8 @@ class ErrorMessages:
     def FileExtension_FileNotFoundError3(keywrd, name, run, charge, filetypes, lock):
         """
             Inputs:
-                keywrd(str)   : Keyword which corresponds to the result processing method that the input 'result'
-                                is the processed outcome of.
+                keywrd(str)   : Keyword which corresponds to the result processing method that FileNotFoundError has
+                                been flagged for.
 
                 name(str)     : Nested dict item key of project name of the particular defect geometry/placement/
                                 impurity inclusion.
