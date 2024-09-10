@@ -56,16 +56,16 @@ class Start:
             "except":True,
             "only":True}
 
-    questions = {"Q1":f"\n{bcolors.QUESTION}Which results types would you like to process?{bcolors.ENDC}", # 46
+    questions = {"Q1":f"\n{bcolors.QUESTION}Which results types would you like to process?{bcolors.ENDC}",
                  "Q2":f"\n{bcolors.QUESTION}Would you like to perform data analysis?({bcolors.OKCYAN}Y/N{bcolors.QUESTION})" 
                       f"{bcolors.ENDC}",  # 45
                  "Q2fup1":f"\n{bcolors.QUESTION}Would you like to create a GUI to display results?({bcolors.OKCYAN}Y/N"
-                          f"{bcolors.QUESTION}){bcolors.ENDC}",  # 55
+                          f"{bcolors.QUESTION}){bcolors.ENDC}",
                  "Q2fup2":f"\n{bcolors.QUESTION}Would you like to overwrite this file?({bcolors.OKCYAN}Y/N"
-                          f"{bcolors.QUESTION}){bcolors.ENDC}"}  # 43
+                          f"{bcolors.QUESTION}){bcolors.ENDC}"}
 
     options = ("band structure", "charges and spins", "charge transition levels", "geometry", "IPR", "PDOS", "WFN",
-               "work function", "test") # 14, 17, 24, 8, 3, 4, 3, 13, 4
+               "work function", "test")
 
     def __init__(self):
         """
@@ -92,7 +92,7 @@ class Start:
             # test whether strs given in argvs 1, 2, and 3 correspond to actual directories.
             for i in 1,2,3:
                 os.chdir(os.path.join(cwd,str(sys.argv[i])))  # test the existence of directory names given as strings
-                                                              # in command arguments`
+                                                              # in command arguments`by changing suedo cwd.
             os.chdir(cwd)  # reset current working directory back to directory set on line 22.
 
         # execution of error exceptions.
@@ -396,16 +396,15 @@ if __name__ =='__main__':
     setup = p.apply(resave_.RsvAddrss4mp, [Core.Directories_Search.Address_book,
                                            Core.Directories_Search.executables_address,
                                            Core.Directories_Search.Dir_Calc_Keys,
-                                           Core.ProcessCntrls.ProcessResults])  # conducting a single worker
-                                                                                         # processes which blocks other
-                                                                                         # workers from being conducted
-                                                                                         # so that important data can be
-                                                                                         # accessed by the pool.
-    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)    # given each available CPU a separate process which
-                                                                    # corresponds to completing the code needed to enact
-                                                                    # each results processing method selected by user.
-                                                                    # by feeding each entry in the ProcessingWants list
-                                                                    # to the class Rooting.
+                                           Core.ProcessCntrls.ProcessResults])  # conducting a single worker processes
+                                                                                # which blocks other workers from being
+                                                                                # conducted so that important data can
+                                                                                # be accessed by the pool.
+
+    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)    # giving each available CPU a separate process which
+                                                            # corresponds to completing the code needed to enact each
+                                                            # results processing method selected by user, by feeding
+                                                            # each entry in the ProcessingWants list to class Rooting.
     p.close()
     p.join()
 
