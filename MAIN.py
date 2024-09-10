@@ -87,13 +87,15 @@ class Start:
 
         # testing whether commandline arguments 1-4 given by user trigger any error codes.
         try:
-            keywrd = str(sys.argv[4])  # test whether correct number of arguments has been given,
+            # test whether correct number of arguments has been given,
+            keywrd = str(sys.argv[4])
             testkeywrd = Start.test[keywrd]
             # test whether strs given in argvs 1, 2, and 3 correspond to actual directories.
             for i in 1,2,3:
-                os.chdir(os.path.join(cwd,str(sys.argv[i])))  # test the existence of directory names given as strings
-                                                              # in command arguments`by changing suedo cwd.
-            os.chdir(cwd)  # reset current working directory back to directory set on line 22.
+                # test the existence of directory names given as strings  in command arguments`by changing suedo cwd.
+                os.chdir(os.path.join(cwd,str(sys.argv[i])))
+            # reset current working directory back to directory set on line 22.
+            os.chdir(cwd)
 
         # execution of error exceptions.
         except IndexError:
@@ -107,50 +109,53 @@ class Start:
             sys.exit(1)
 
         else:
-            Arguments = Core.UArg(sys.argv[1], sys.argv[2],sys.argv[3])  # saving directory str given by user
-                                                                         # for 1st 3 arguments.
+            # saving directory str given by user for 1st 3 arguments.
+            Arguments = Core.UArg(sys.argv[1], sys.argv[2],sys.argv[3])
             if keywrd != 'all':
-                if len(sys.argv) == 6:  # single specific defect subdirectory given as final argument.
+                # single specific defect subdirectory given as final argument.
+                if len(sys.argv) == 6:
                     defect = [sys.argv[5]]
-                else:  # multiple specific defect subdirectories given after 5th argument.
+                # multiple specific defect subdirectories given after 5th argument.
+                else:
                     defect = []
                     for i in range(5, len(sys.argv)):
-                        defect.append(sys.argv[i])  # creation of list of specific defect subdirectories given by user.
+                        # creation of list of specific defect subdirectories given by user.
+                        defect.append(sys.argv[i])
                 if keywrd == 'only':
-                    Arguments.OnlyStated(defect)  # saving defect subdirectory name(s) and enacting setting for data
-                                                  # processing of only subdirectories named.
+                    # saving defect subdirectory name(s) & enacting setting for data processing of only subdirs named.
+                    Arguments.OnlyStated(defect)
                 elif keywrd == 'except':
-                    Arguments.ExceptionStated(defect)  # saving defect subdirectory name(s) and enacting settings for
-                                                       # data processing of all subdirs except subdirs named.
+                    # saving defect subdir name(s) & enacting settings for data processing of all subdirs except named.
+                    Arguments.ExceptionStated(defect)
         self.stop, t = None, time.time()
 
-        # multithreading set up
-        q = queue.Queue()  # to pass information between threads.
-        lock = th.Lock()  # to block simultaneous printing of text from multiple threads.
+        ## multithreading set up
 
+        # to pass information between threads.
+        q = queue.Queue()
+        # to block simultaneous printing of text from multiple threads.
+        lock = th.Lock()
 
-        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, [], True))  # printing '-----' across screen while
-                                                                               # downtime buffer happening in
-                                                                               # check_users_wants
+        # printing '-----' across screen while downtime buffer happening in check_users_wants
+        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, [], True))
 
-        t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))  # finding all os.paths() for
-                                                                                 # directories/subdirectories with CP2K
-                                                                                 # results to be included in execution
-                                                                                 # of programme.
+        # finding all os.paths() for directories/subdirectories with CP2K results to be included in programme execution.
+        t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))
         t2 = th.Thread(target=self.check_users_wants, args=(q, lock))
         t0.start()
         t1.start()
         t2.start()
         t0.join()
         t2.join()
-        t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock,0.06))  # printing message for user and '-----' across
-                                                                          # screen while thread t1 finishes.
+
+        # printing message for user and '-----' across screen while thread t1 finishes.
+        t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock,0.06))
         t_.start()
         t_.join()
         t1.join()
 
-        if self.stop is True: # so that if user uses 'only' and one of the directories doesn't exit in parent
-                              # directory program will stop.
+        # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
+        if self.stop is True:
              sys.exit(1)
 
         print("done in",time.time()-t)
@@ -169,12 +174,12 @@ class Start:
                                  printing commands within the current with statement it has acquired and is released.
         """
         if Core.UArg.Only is True:
-            time.sleep(2.75)  # provide buffer downtime for thread in the event that a given subdirectory for 'only'
-                              # can't be found and an error is flagged.
+            # provide buffer downtime for thread in case a given subdirectory for 'only' isn't found & error is flagged.
+            time.sleep(2.75)
             while q.empty() is False:
                 item = q.get()
-                if item == "sys.exit(1)":  # if user uses 'only' and one of the directories doesn't exit in parent
-                                           # directory then q will be sent an item to trigger the program to stop & end.
+                # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
+                if item == "sys.exit(1)":
                     self.stop = True
                     return
             else:
@@ -199,9 +204,12 @@ class Start:
         text = str(Start.questions["Q1"]+"{bcolors.OKBLUE}\nResults options include: {bcolors.OKCYAN}"+
                            ', '.join(Start.options[0:6])+"                              "+
                           ', '.join(Start.options[6:9]))
-        SlowMessageLines(text, lock)  # pass text and lock to function to print each line of question at a steady pace
-                                      # when lock is next unreleased and available.
+
+        # pass text & lock to function to print each line of question slowly when lock is next unreleased & available.
+        SlowMessageLines(text, lock)
         processing = input()
+
+        # test for error in user's input response.
         try:
             for entry in processing.split(', '):
                 Start.options.index(entry)
@@ -213,9 +221,9 @@ class Start:
             processing = processing.split(', ')
         else:
             processing = [processing]
-        t3 = th.Thread(target=Core.ProcessCntrls.SavingOtherWants, args=(processing,))  # saving users answer for what
-                                                                                        # results they'd like
-                                                                                        # processing.
+
+        # saving users answer for what results they'd like processing.
+        t3 = th.Thread(target=Core.ProcessCntrls.SavingOtherWants, args=(processing,))
         t3.start()
         t3.join()
 
@@ -276,7 +284,8 @@ class Start:
 
             display = 'N'
 
-        Core.UserWants.Save(analysis, display) # saving users wants for analysing and displaying the data.
+        # saving users wants for analysing and displaying the data.
+        Core.UserWants.Save(analysis, display)
 
 
 
@@ -388,23 +397,18 @@ class resave_:
 # Entry point of code for multiprocessing.
 if __name__ =='__main__':
     Start()
-    # limiting used cpu's within pool available to child processes to 2/3rd of the available cpu's of the local machine
-    # so that there are still cpu's available for grandparent processes to use further in within the code.
+    # limit CPUs available to pool child processes to 2/3 of local machine CPUs - CPUs left for grandchild processes.
     CPUs2use = int(os.cpu_count() * 2/3)
-    p = PoolNoDaemonProcess()  # CPUs2use
+    p = PoolNoDaemonProcess(CPUs2use)
 
+    # conducting a single worker processes while blocking other workers to allow access to important data by the pool.
     setup = p.apply(resave_.RsvAddrss4mp, [Core.Directories_Search.Address_book,
                                            Core.Directories_Search.executables_address,
                                            Core.Directories_Search.Dir_Calc_Keys,
-                                           Core.ProcessCntrls.ProcessResults])  # conducting a single worker processes
-                                                                                # which blocks other workers from being
-                                                                                # conducted so that important data can
-                                                                                # be accessed by the pool.
+                                           Core.ProcessCntrls.ProcessResults])
 
-    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)    # giving each available CPU a separate process which
-                                                            # corresponds to completing the code needed to enact each
-                                                            # results processing method selected by user, by feeding
-                                                            # each entry in the ProcessingWants list to class Rooting.
+    # Give each available CPU a process for each selected result processing method - feed ProcessingWants to Rooting.
+    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)
     p.close()
     p.join()
 
