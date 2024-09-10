@@ -103,36 +103,43 @@ class linewidth:
     """
 
     def __init__(self, trial):
-        # String will contain "{" and "}" around inactive bcolors calls for changing text colour. Characters within
-        # these bcolors calls can't be counted as string characters. Split the string into list at "{" instances first.
+        # Split string into list at "{" instances.
         trial, j = trial.split("{"), 0
 
         for item in trial:
             if "}" in item:
                 # get index of item in list and split list items in two at the "}" instance.
                 indx, new  = trial.index(item), [newitem for newitem in item.split("}")]
-                trial.remove(item)  # remove item from list so that it can be replaced by its two halves.
-                [trial.insert(indx + idx, n) for idx, n in zip(range(len(new)), new)]  # 1st half of item placed back at
-                                                                                       # original index of item, 2nd
-                                                                                       # half inserted at index + 1.
+                # remove item from list so that it can be replaced by its two halves.
+                trial.remove(item)
+                # 1st half of item placed back at original index of item, 2nd half inserted at index + 1.
+                [trial.insert(indx + idx, n) for idx, n in zip(range(len(new)), new)]
 
         for indx, item in enumerate(trial):
-            if "bcolors" not in item and len(item) != 0:  # Don't want to count characters of bcolors calls.
-                if "\n" in item:  # pre-inserted newline in string (ie linebreak for providing further context) found
-                    j = 0 + len(item)  # reset value of j to zero then add length of characters of item. '\n' are stated
-                                       # after changes in text colour so will be at start of the string.
+            # Don't want to count characters of bcolors calls.
+            if "bcolors" not in item and len(item) != 0:
+                # pre-inserted newline in string (ie linebreak for providing further context) found
+                if "\n" in item:
+                    # reset j to 0, add item characters length. '\n' stated after txt color change at start of str.
+                    j = 0 + len(item)
                 else:
-                    j += len(item)  # add length of character of item to j.
+                    # add length of character of item to j.
+                    j += len(item)
                 if j > 110:
                     j, trial = self.trimline(j, trial, item, indx)
                     if j == 110:
-                        j = j - 110  #reset j back to 0 if at 110.
+                        # reset j back to 0 if at 110.
+                        j = j - 110
 
-            if "bcolors" in item:  # for items which are inactive bcolors calls, replace with active bcolors calls.
+            # inactive bcolors (txt color) calls. Characters in these not to be counted as str characters.
+            if "bcolors" in item:
+                # remove inactive bcolors calls
                 trial.remove(item)
+                # replace with active bcolors calls.
                 trial.insert(indx, str("{}".format(eval("{}".format(item)))))
 
-        trial.extend([str("{}".format(eval("{}".format('bcolors.ENDC')))), "\n"])  # add final reset of color & newline
+        # add final reset of color & newline
+        trial.extend([str("{}".format(eval("{}".format('bcolors.ENDC')))), "\n"])
         trial = "".join(trial)
         self.trial = str(trial)
 
@@ -149,22 +156,30 @@ class linewidth:
 
                 indx(int)   : Index of item within the list of trial.
         """
-        k, o = 110 - j, [i for i in item]  # k is num of characters j is over 110 by. o is  list of characters in item.
-        if o[k] == ' ':  # if character which would be character 110 on the line is a blank space.
-            o.insert(k + 1, "\n")  # insert newline after blank space.
+
+        # k is num of characters j is over 110 by. o is  list of characters in item.
+        k, o = 110 - j, [i for i in item]
+        # if character which would be character 110 on the line is a blank space.
+        if o[k] == ' ':
+            # insert newline after blank space.
+            o.insert(k + 1, "\n")
         else:
             try:
                 while o[k] != ' ':
-                    k -= 1  # move back characters from would be character 110 until character is a blank space.
+                    # move back characters from would be character 110 until character is a blank space.
+                    k -= 1
                 o.insert(k + 1, "\n")
-            except IndexError:  # index error if string is shorter than index stated to be character 110 of the line.
-                o.insert(0, "\n")  # insert newline at beginning of string.
+            # index error if string is shorter than index stated to be character 110 of the line.
+            except IndexError:
+                # insert newline at beginning of string.
+                o.insert(0, "\n")
 
-        new = "".join(o)  # put broken characters of item back together and replace item in main list
+        # put broken characters of item back together and replace item in main list
+        new = "".join(o)
         trial.remove(item)
         trial.insert(indx, new)
-        j_ = j + k - 110  # reset j value to be returned based on removing the 110 characters that are now on the
-                          # previous line and then adding the characters which are now the length of line.
+        # return j value to account for removing 110 characters now on previous line, add characters now on current line.
+        j_ = j + k - 110
 
         return j_, trial
 
@@ -186,10 +201,12 @@ class SlowMessageLines:
     def __init__(self, message, lock = None):
         message_ = linewidth(message).Return()
         lines = message_.splitlines()
-        if lock:  # text to be printed is within a multithreading environment.
+        # text to be printed is within a multithreading environment.
+        if lock:
             with lock:
                 self.Print(lines)
-        else:  # test to be printed is not within a multithreading environment.
+        # test to be printed is not within a multithreading environment.
+        else:
             self.Print(lines)
 
     def Print(self,lines):
@@ -237,6 +254,7 @@ class ErrorMessages:
             Inputs:
                 keywrd(str) : user given commandline argument four
         """
+
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}Invalid keyword {bcolors.BOLD}{bcolors.HEADER}'"
                    +f"{keywrd}"+"'{bcolors.ENDC}{bcolors.FAIL}{bcolors.UNDERLINE} given!{bcolors.ENDC}"
                                 "{bcolors.WARN3} \nValid keywords for argument four are:  '{bcolors.WARNING}"
@@ -252,8 +270,11 @@ class ErrorMessages:
 
                 i(int)          : Number of the argument which triggered the error code.
         """
+
+        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
         path, cwd = (str(err).split(' ')[-1]).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
+
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}"+f"{' '.join(str(err).split(' ')[:-1])}"
                    +"{bcolors.ENDC} {bcolors.HEADER}"+f"{dirpath}"+"{bcolors.FAIL}.{bcolors.WARNING} \nArgument "+f"{i}"
                    +" {bcolors.WARN2}should be "+f"{ErrorMessages.argv_dict[str(i)]}"+" {bcolors.ENDC}"
@@ -272,6 +293,7 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}Invalid results type given!{bcolors.ENDC}"
                    "{bcolors.WARNING} \nValid methods implemented are:{bcolors.OKCYAN}{bcolors.ITALIC} \n"
                    +f"{', '.join(options)}"+"{bcolors.ENDC}{bcolors.WARN3} \nPlease use commas to separate the names of"
@@ -286,6 +308,7 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
         text = str("\n{bcolors.FAIL}WARNING:{bcolors.UNDERLINE}Invalid answer given!{bcolors.ENDC}{bcolors.WARN3} "
                    "\nTry again. Only valid answers are {bcolors.OKCYAN}Y {bcolors.WARN3}and {bcolors.OKCYAN}N"
                    "{bcolors.WARN3}. ")
@@ -299,6 +322,7 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}Results asked to be processed include 'WFN'. "
                    "{bcolors.ENDC}{bcolors.WARN3} \nWFN results can not be displayed in a csv file. \nIf you do not "
                    "wish for analysis to be performed on the other results asked for please press {bcolors.OKCYAN}"
@@ -316,6 +340,7 @@ class ErrorMessages:
                                   blocks the ability of any other thread to print until the lock has finished the
                                   printing commands within the current with statement it has acquired and is released.
         """
+
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}"+f"{err}"+"{bcolors.ENDC}")
         SlowMessageLines(text, lock)
 
@@ -330,8 +355,11 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
+        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
         path, cwd = str(Core.UArg.DefD).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
+
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}[Errno 2] No subdirectory {bcolors.BOLD}{bcolors.HEADER}"
                    "'"+f"{key}"+"'{bcolors.ENDC}{bcolors.FAIL}{bcolors.UNDERLINE} found in parent directory:"
                                 "{bcolors.ENDC} {bcolors.HEADER}'"+f"{dirpath}"+"'{bcolors.FAIL}.{bcolors.WARN2}\n"
@@ -355,8 +383,11 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
+        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
         path, cwd = str(Core.UArg.DefD).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
+
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}[Errno 2] No subdirectory {bcolors.BOLD}{bcolors.HEADER}"
                    "'"+f"{key}"+"'{bcolors.ENDC}{bcolors.FAIL}{bcolors.UNDERLINE} found in parent directory:"
                                 "{bcolors.ENDC} {bcolors.HEADER}'"+f"{dirpath}"+"'{bcolors.FAIL}.{bcolors.WARN2}\n"
@@ -390,7 +421,10 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
         print("\n")
+
+        # want message to be displayed for each of the files within the filetypes list.
         for fltyp in filetypes:
             text = str("{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}[Errno 2]{bcolors.ENDC}{bcolors.FAIL} CP2K output "
                        "file type {bcolors.BOLD}{bcolors.HEADER}'"+f"{fltyp}"+"'{bcolors.ENDC}{bcolors.FAIL} needed for"
@@ -421,6 +455,8 @@ class ErrorMessages:
                                  blocks the ability of any other thread to print until the lock has finished the printing
                                  commands within the current with statement it has acquired and is released.
         """
+
+        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
         path, cwd = str(path).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
@@ -446,8 +482,11 @@ class ErrorMessages:
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
         """
+
+        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
         path, cwd = str(path).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
+
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}[Errno 2]{bcolors.ENDC}{bcolors.FAIL} Needed "
                    "{bcolors.HEADER}'-ELECTRON_DENSITY-1_0.cube'{bcolors.ENDC}{bcolors.FAIL} file for {bcolors.OKGREEN}"
                    "analysis of Bader charges of atoms{bcolors.ENDC}{bcolors.FAIL} could not be found within the "
@@ -468,6 +507,7 @@ class ErrorMessages:
                                          finished the printing commands within the current with statement it has
                                          acquired and is released.
         """
+
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}[Errno 2]{bcolors.ENDC}{bcolors.FAIL} Needed "
                    "{bcolors.HEADER}'-ELECTRON_DENSITY-1_0.cube'{bcolors.ENDC}{bcolors.FAIL} file for {bcolors.OKGREEN}"
                    "analysis of Bader charges of atoms{bcolors.ENDC}{bcolors.FAIL} could not be found within the "
@@ -475,6 +515,8 @@ class ErrorMessages:
         SlowMessageLines(text, lock)
 
         time.sleep(1)
+
+        # want to print each of the strs held in list DirsMissingBader each on a separate line, one by one.
         for dir in DirsMissingBader:
             text = str("{bcolors.HEADER}- "+f"{dir}"+"{bcolors.ENDC}")
             SlowMessageLines(text, lock)
