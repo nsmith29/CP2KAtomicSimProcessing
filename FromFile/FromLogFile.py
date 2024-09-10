@@ -26,15 +26,20 @@ def find_a(line, index, lines, i, result):
                                                  variable type.
     """
 
-    strg1 = line  # line with a lattice vector and length of material cell used within calc.
-    strg2 = lines[index]  # self.lines[self.index] is fileline below line; holds b latt. vec. & length.
-    strg3 = lines[index + 1]  # c latt. vec. & length.
+    # line with a lattice vector and length of material cell used within calc.
+    strg1 = line
+    # self.lines[self.index] is fileline below line; holds b latt. vec. & length.
+    strg2 = lines[index]
+    # c latt. vec. & length.
+    strg3 = lines[index + 1]
     collect1 = []
     for s, item, letter in zip([1, 2, 3], ['a', 'b', 'c'], ['A', 'B', 'C']):
+        # extract txt of indices 4,5,6,9 in line split list. {letter} is lat cnst, {item}Latt is {item} line of lat vec.
         exec(f'*{letter}, {item}Latt= [float(var[1]) for var in enumerate(strg{s}.split()) if var[0] in '
-             f'[4,5,6,9]]')  # data extraction of text indexed from list when line(s) is split via delimiter
-                             # white space. {letter} is lattice constant length, {item}Latt is lattice vector.
+             f'[4,5,6,9]]')
         exec(f'collect1.extend([{letter}, {item}Latt])')
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = collect1
 
 def find_at(index, lines, i, result):
@@ -57,8 +62,13 @@ def find_at(index, lines, i, result):
                                                  variable type.
     """
 
+    # make empty lists
     X, Y, Z, ELEMENT, MASS = [], [], [], [], []
+
+    # find max number of atoms in calc for information to collected for.
     max = [int(var[1]) for var in enumerate(lines[index - 20].split()) if var[0] in [3]][0]
+
+    # Some log files have an extra blank space between line where "locate" string is found & start of atom info.
     try:
         element = [var[1] for var in enumerate(lines[index + 2].split()) if var[0] in [2]]
         n = 2
@@ -67,15 +77,15 @@ def find_at(index, lines, i, result):
         n = 3
     finally:
         for p in range(0, max):
+            # extract index 2,4-6,8 in line split list. element - atom element, x/y/z - x/y/z-coord, mass - atomic mass.
             element, x, y, z, mass = [var[1] for var in enumerate(lines[index + n + p].split()) if
-                                      var[0] in [2, 4, 5, 6, 8]]  # extraction of text in indices 2,4-6,8 in list of
-                                                                  # line(s) split by delimiter white space. For atom
-                                                                  # p, element is the element type of the atom, x/y/
-                                                                  # z is the atom's x-/y-/z-coordinate, mass is the
-                                                                  # atom's atomic mass.
+                                      var[0] in [2, 4, 5, 6, 8]]
             for f, F in zip([float(x), float(y), float(z), element, mass], [X, Y, Z, ELEMENT, MASS]):
-                F.append(f)  # saving extracted data within predefined lists.
+                # saving extracted data within predefined lists.
+                F.append(f)
     array = np.array([X, Y, Z])
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = [array]
 
 def find_charge(line, i, result):
@@ -94,13 +104,20 @@ def find_charge(line, i, result):
                                                  variable type.
     """
 
+    # extracted txt of index 2 in line split list, C is the charge state of calc.
     C = [int(var[1]) for var in enumerate(line.split()) if var[0] in [2]][0]
+
+    # alter C so reported charge state is given with sign of charge state after number of charge ie -1 -> 1-
     if C < 0:
+        # negative charge states.
         C = "".join(["".join([i for i in list(str(C)) if i != '-']),'-'])
     elif C == 0:
         pass
     else:
+        # positive charge states.
         C = "".join([str(C),"+"])
+
+    # place extracted value in corresponding position of proxy list.
     result[i] = [C]
 
 def find_energy(line, i, result):
@@ -119,10 +136,10 @@ def find_energy(line, i, result):
                                                  variable type.
     """
 
-    E = [(round(float(var[1]), 10) * 27.211) for var in enumerate(line.split()) if var[0] in [8]][0]  # total energy
-                                                                                                      # converted from
-                                                                                                      # hartree units
-                                                                                                      # to eV.
+    # extract of txt of index 8 in line split list. E is tot energy of calc converted from hartree units to eV.
+    E = [(round(float(var[1]), 10) * 27.211) for var in enumerate(line.split()) if var[0] in [8]][0]
+
+    # place extracted value in corresponding position of proxy list.
     result[i] = [E]
 
 def find_gap(line, index, lines, i, result):
@@ -148,12 +165,17 @@ def find_gap(line, index, lines, i, result):
                                                  variable type.
     """
 
-    strg2 = line  # beta gap
-    strg1 = lines[index - 2]  # alpha gap
+    # beta gap
+    strg2 = line
+    # alpha gap
+    strg1 = lines[index - 2]
     collect2 = []
     for spin, s in zip(["alpha", "beta"], [1, 2]):
-        exec(f'{spin}_HOMO_LUMOgap = [float(var[1]) for var in enumerate(strg{s}.split()) if var[0] in[6]][0]')  # in eV.
+        # extract txt of index 6 in line split list. {spin}_HOMO_LUMOgap is {spin} band gap in eV.
+        exec(f'{spin}_HOMO_LUMOgap = [float(var[1]) for var in enumerate(strg{s}.split()) if var[0] in[6]][0]')
         exec(f'collect2.append({spin}_HOMO_LUMOgap)')
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = collect2
 
 def find_kind(lines, i, result):
@@ -174,12 +196,12 @@ def find_kind(lines, i, result):
 
     collect3 = []
     for line in lines:
-        kind_ele, num_atoms = [var[1] for var in enumerate(line.split())
-                               if var[0] in [3, 7]]  # extraction of txt in indices 3, 7 in list of line split
-                                                     # via delimiter white space. kind_ele is name of particular
-                                                     # kind, num_atoms is the number of atoms of kind in
-                                                     # calculation.
+        # extract indices 3,7 in line split list. kind_ele - name of kind, num_atoms - # of atoms of kind in calc.
+        kind_ele, num_atoms = [var[1] for var in enumerate(line.split()) if var[0] in [3, 7]]
+                                                     #
         collect3.extend([kind_ele, num_atoms])
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = collect3
 
 def find_name(line, i, result):
@@ -198,9 +220,10 @@ def find_name(line, i, result):
                                                  variable type.
     """
 
-    N = [str(var[1]) for var in enumerate(line.split()) if var[0] in [3]][0]  # extraction of txt in index 3 in list of
-                                                                              # line split via delimiter white space. N
-                                                                              # is the project name of calculation.
+    # extract txt of index 3 in line split list. N is the project name of calculation.
+    N = [str(var[1]) for var in enumerate(line.split()) if var[0] in [3]][0]
+
+    # place extracted value in corresponding position of proxy list.
     result[i] = [N]
 
 def find_pop1(atoms, index, lines, i, result):
@@ -229,13 +252,14 @@ def find_pop1(atoms, index, lines, i, result):
 
     collect = []
     rnge = atoms if type(atoms) == list else range(0,atoms)
-    for A in rnge:  # A of specific atomm indices or from 0 to total number of atoms in system.
+    # A of specific atom indices or from 0 to total number of atoms in system.
+    for A in rnge:
+        # extract indices 3-6 in line split list. p1_a & p1_b - alpha & beta pops, p1_s & p1_c - Mulliken spin & charge.
         p1_a, p1_b, p1_c, p1_s = [round(float(var[1]),3) for var in enumerate(lines[int(index + 2 + A)].split())
-                                  if var[0] in [3, 4, 5, 6]]  # extraction of txt in indices 3-6 in list of line
-                                                              # split by delimiter white space. p1_a & p1_b are
-                                                              # alpha & beta spin populations, p1_s & p1_c are
-                                                              # atom spin & charge for Mulliken analysis.
+                                  if var[0] in [3, 4, 5, 6]]
         collect.append([p1_a, p1_b, p1_c, p1_s])
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = collect
 
 def find_pop2(atoms, index, lines, i, result):
@@ -264,13 +288,14 @@ def find_pop2(atoms, index, lines, i, result):
 
     collect = []
     rnge = atoms if type(atoms) == list else range(0, atoms)
-    for A in rnge:  # A of specific atomm indices or from 0 to total number of atoms in system.
+    # A of specific atom indices or from 0 to total number of atoms in system.
+    for A in rnge:
+        # extract indices 4-7 in line split list. p2_a & p2_b - alpha & beta pops, p2_s & p2_c - Hirshfeld spin & charge.
         p2_a, p2_b, p2_s, p2_c = [round(float(var[1]),3) for var in enumerate(lines[int(index + 2 + A)].split())
-                                  if var[0] in [4, 5, 6, 7]]  # extraction of txt in indices 4-7 in list of line
-                                                              # split by delimiter white space. p2_a & p2_b are
-                                                              # alpha & beta spin populations, p2_s & p2_c are
-                                                              # atom spin & charge for Hirshfeld analysis.
+                                  if var[0] in [4, 5, 6, 7]]
         collect.append([p2_a, p2_b, p2_c, p2_s])
+
+    # place extracted values in corresponding position of proxy list.
     result[i] = collect
 
 def find_run(line, i, result):
@@ -289,9 +314,10 @@ def find_run(line, i, result):
                                                  variable type.
     """
 
-    R = [str(var[1]) for var in enumerate(line.split()) if var[0] in [3]][0]  # extraction of txt in index 3 in list of
-                                                                              # line split via delimiter white space. R
-                                                                              # is the calculation run type.
+    # extract txt of index 3 in line split list. R is the calculation run type.
+    R = [str(var[1]) for var in enumerate(line.split()) if var[0] in [3]][0]
+
+    # place extracted value in corresponding position of proxy list.
     result[i] = [R]
 
 def find_version(line, i, result):
@@ -310,10 +336,10 @@ def find_version(line, i, result):
                                                  variable type.
     """
 
-    V = [float(var[1]) for var in enumerate(line.split()) if var[0] in [5]][0]  # extraction of txt in index 5 in list
-                                                                                # of line split via delimiter white
-                                                                                # space. V is CP2K version calculation
-                                                                                # performed with.
+    # extract txt of index 5 in line split list. V is CP2K version calculation performed with.
+    V = [float(var[1]) for var in enumerate(line.split()) if var[0] in [5]][0]
+
+    # place extracted value in corresponding position of proxy list.
     result[i] = [V]
 
 class FromLog:
@@ -418,16 +444,17 @@ class FromLog:
         log = open(os_path, 'r')
         lines, index = [log.readlines(), len(log.readlines()) + 1]
 
-        for ln in reversed(lines):  # for every line in file from bottom of file,
+        # for every line in file from bottom of file,
+        for ln in reversed(lines):
             index -= 1
-            for keywrd in keywrds:  # for each result processing method keyword,
-                for indx, item in enumerate(FromLog.want[keywrd]):  # info for each variable to be extracted for the
-                                                                    # specific method,
+            # for each result processing method keyword.
+            for keywrd in keywrds:
+                # info for each variable to be extracted for the specific method,
+                for indx, item in enumerate(FromLog.want[keywrd]):
                     if FromLog.var_fo.get(item)["found"] is False:
                         if item.find("pop") == -1 and FromLog.var_fo.get(item)["locate"] in ln:
 
-                            # Creating mp.Process() for associated functions which require index and lines to be passes
-                            # as args.
+                            # Creating mp.Process() for associated functions requiring args of index & lines.
                             if item in ["a", "at_crd", "gap"]:
                                 key = str(FromLog.var_fo.get(item)["via"])
                                 # associated function w/ "at_crd" doesn't need ln being passed to it as an arg.
@@ -436,7 +463,8 @@ class FromLog:
                                                                                                         "at_crd" \
                                                else mp.Process(target=eval("{}".format(key)),
                                                                 args=(ln, index, lines, indx, self.v2rtn))
-                                self.update_dict(item)  # changing boolean to None to break out of if loop for var item
+                                # changing boolean to None to break out of if loop for var item
+                                self.update_dict(item)
 
                             # 1st instance of "locate" string found in log for "knd_atms". Get total # of kinds in calc.
                             elif item == "knd_atms" and not FromLog.var_fo.get("knd_atms")["num"]:
@@ -444,9 +472,8 @@ class FromLog:
 
                             # total # of kinds known, new instance of "locate" string found in log file.
                             elif item == "knd_atms" and FromLog.var_fo.get("knd_atms")["num"]:
-                                all_kinds.append(ln)  # all_kinds(list) was created alongside self.process at beginning
-                                                      # of __init__. Each new ln with new instance of "locate" found is
-                                                      # appended to list.
+                                # list created at top of __init__. Append each new ln instance of "locate" found in.
+                                all_kinds.append(ln)
 
                                 # update number of kinds found to reflect another instance of "locate" has been found.
                                 self.update_dict("knd_atms",["cnt", int(FromLog.var_fo.get("knd_atms")["cnt"]+1)])
@@ -456,18 +483,18 @@ class FromLog:
                                     key = str(FromLog.var_fo.get(item)["via"])
                                     self.process[indx] = mp.Process(target=eval("{}".format(key)),
                                                                     args=(all_kinds, indx, self.v2rtn))
-                                    self.update_dict("knd_atms")  # changing boolean to None to break out of if loop
-                                                                  # for "knd_atms" variable.
+                                    # changing boolean to None to break out of if loop for "knd_atms" variable.
+                                    self.update_dict("knd_atms")
 
                             # creating mp.Process() for associated functions which require ln.
                             else:
                                 key = str(FromLog.var_fo.get(item)["via"])
                                 self.process[indx] = mp.Process(target=eval("{}".format(key)),
                                                                 args=(ln, indx, self.v2rtn))
-                                self.update_dict(item)  # changing boolean to None to break out of if loop for var item.
+                                # changing boolean to None to break out of if loop for var item.
+                                self.update_dict(item)
 
-                        # 1st instance of "locate" string found in log for "pop1" or "pop2". atom numbers ("num")
-                        # unknown, get total number of atoms in calc.
+                        # 1st "locate" string instance found for "pop1"/"pop2". atom "num" unknown, get tot atom #.
                         elif item.find("pop") != -1 and FromLog.var_fo.get(item)["locate"][0] in ln and not \
                                 FromLog.var_fo.get(item)["num"]:
                             self.pop_first_found(item, index, lines)
@@ -477,7 +504,8 @@ class FromLog:
                             atoms, key = int(FromLog.var_fo.get(item)["num"]), str(FromLog.var_fo.get(item)["via"])
                             self.process[indx] = mp.Process(target=eval("{}".format(key)),
                                                             args=(atoms, index, lines, indx, self.v2rtn))
-                            self.update_dict(item)  # changing boolean to None to break out of if loop for var item.
+                            # changing boolean to None to break out of if loop for var item.
+                            self.update_dict(item)
         self.compute()
         log.close()
         [self.reset_dict(item, FromLog.var_fo.get(item)["reset"]) for item in [FromLog.want.get(keywrd) for keywrd in
@@ -506,10 +534,10 @@ class FromLog:
                             "knd_atms" has been found to be contained in.
         """
 
-        number = [float(var[1]) for var in enumerate(line.split())
-                  if var[0] in [6]][0]  # extraction of txt in indices 6 in list of line split via delimiter
-                                        # white space. number is number of different element kinds in calc.
-        self.update_dict("knd_atms", ["num", number, "cnt", 0])  # save total num of kinds in dict for later reference.
+        # extract txt of index 6 in line split list. number is number of different element kinds in calc.
+        number = [float(var[1]) for var in enumerate(line.split()) if var[0] in [6]][0]
+        # save total num of kinds in dict for later reference.
+        self.update_dict("knd_atms", ["num", number, "cnt", 0])
 
     def pop_first_found(self, pop, index, lines):
         """
@@ -527,12 +555,13 @@ class FromLog:
                                      log.readlines() in __init__.
         """
 
-        n = 2 if pop == "pop1" else 3  # extra blank line in file between lines containing "locate"[0] and last atom #
-                                       # for "pop2"
+        # extra blank line in file between lines containing "locate"[0] and last atom for "pop2"
+        n = 2 if pop == "pop1" else 3
+        # extract txt of index 0 in line split list. number is atom # of last atom listed in analysis = calc tot atoms.
         number = [var[1] for var in enumerate(lines[index - n].split())
-                  if var[0] in [0]][0]  # extraction of txt in index 0 in list of line split by white space. number
-                                        # is atom # of last atom listed in pop anlysis, = system tot atoms.
-        self.update_dict(pop, ["num", number])  # save total number of atoms in dict for later reference.
+                  if var[0] in [0]][0]
+        # save total number of atoms in dict for later reference.
+        self.update_dict(pop, ["num", number])
 
     @classmethod
     def update_dict(cls, key, extra=None):
@@ -555,13 +584,12 @@ class FromLog:
                                    "knd_atms", "pop1", and "pop2".
         """
 
-        if extra:  # if optional argument extra given, then item value for item key "found" doesn't need updating yet.
-            for i in range(0, int(len(extra)/2)):  # if list, will consist of elements such as [k1, v1, k2, v2, k3, v3],
-                                                   # Half of list length = # of additional item pairs to be updated.
-
-                # Ensuring subsequent elements [i*(i*1) and i*(i*1)*1] of list used as item key and value pairs
-                # i.e. if i = 0: i*(i*1) = 0 {k1}, i*(i*1)*1 = 1{v1}; if i = 2, i*(i*1) = 4 {k3}, i*(i*1)*1 = 5 (v3).
-                FromLog.var_fo[key].update({extra[int(i+(i*1))]: extra[int(i+(i*1)+1)]})
+        # if optional argument extra given, then item value for item key "found" doesn't need updating yet.
+        if extra:
+            # List such as [k1, v1, k2, v2, k3, v3], 1/2 of list length = # of additional item pairs to be updated.
+            for i in range(0, int(len(extra)/2)):
+                # Pairing indices 2*i & 2*i+1 as key & value - i=0, 2*i=0{k1}, 2*i+1=1{v1}; i=2, 2*i=4{k3}, 2*i+1=5{v3}.
+                FromLog.var_fo[key].update({extra[int(2*i)]: extra[int(2*i+1)]})
         else:
             FromLog.var_fo[key].update({"found": None})
 
@@ -589,13 +617,13 @@ class FromLog:
         """
 
         FromLog.var_fo[key].update({"found": False})
-        if extra:  # only when extra isn't None
-            for i in range(0, int(len(extra)/2)):  # if list, will consist of elements such as [k1, v1, k2, v2, k3, v3],
-                                                   # Half of list length = # of additional item pairs to be updated.
+        # only when extra isn't None
+        if extra:
+            # List such as [k1, v1, k2, v2, k3, v3], 1/2 of list length = # of additional item pairs to be updated.
+            for i in range(0, int(len(extra)/2)):
 
-                # Ensuring subsequent elements [i*(i*1) and i*(i*1)*1] of list used as item key and value pairs
-                # i.e. if i = 0: i*(i*1) = 0 {k1}, i*(i*1)*1 = 1{v1}; if i = 2, i*(i*1) = 4 {k3}, i*(i*1)*1 = 5 (v3).
-                FromLog.var_fo[key].update({extra[int(i+(i*1))]: extra[int(i+(i*1)+1)]})
+                # Pairing indices 2*i & 2*i+1 as key & value - i=0, 2*i=0{k1}, 2*i+1=1{v1}; i=2, 2*i=4{k3}, 2*i+1=5{v3}.
+                FromLog.var_fo[key].update({extra[int(2 * i)]: extra[int(2 * i + 1)]})
 
     def Return(self):
         return self.v2rtn
