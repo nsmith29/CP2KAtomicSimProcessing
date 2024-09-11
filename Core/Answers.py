@@ -142,13 +142,15 @@ class ProcessCntrls:
     def SavingOtherWants(cls, processing):
         setup = []
         for process in processing:
-            setup.append(str("results for {}".format(process)))  # So that when ProcessResults is populated, there are
-                                                                 # enough inner item values to be paired with the inner
-                                                                 # key values of each result processing methods wanted
-                                                                 # by user.
+            # When ProcessResults populated, are enough inner item values for inner result processing methods key strs.
+            setup.append(str("results for {}".format(process)))
 
         ProcessCntrls.ProcessWants = processing
         ProcessCntrls.setup = setup
+
+        if Core.UArg.Only is True:
+            # ProcessResults not populated if 'only' used, now ProcessWants are known & saved, populate ProcessResults.
+            Core.Directories_Search.PopulateResultsHolder()
 
     @classmethod
     def UpdateForResultsSaving(cls, dict_, name, rn_typ, chrg_stt, keywrd, result):

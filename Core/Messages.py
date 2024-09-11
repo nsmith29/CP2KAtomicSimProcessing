@@ -40,25 +40,60 @@ class delay_print:
         Delayed horizontal (on same line) printing of the characters within a string.
 
         Inputs:
-            s(str)        : String to be printed character by character.
+            s(str)         : String to be printed character by character.
 
-            lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                            blocks the ability of any other thread to print until the lock has finished the printing
-                            commands within the current with statement it has acquired and is released.
+            lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+                             blocks the ability of any other thread to print until the lock has finished the printing
+                             commands within the current with statement it has acquired and is released.
 
-            t(float)      : Optional input given if downtime between printing characters needs to be changed from
-                            default of 0.024 seconds.
+            t(float)       : Optional. Input given if downtime between printing characters needs to be changed from
+                             default of 0.024 seconds.
+
+            q(queue.Queue) : Optional. Included if information from another thread needs to be passed to this function
+                             in order to disrupt printing of str characters one by one while waiting for other threads
+                             are being executed.
     """
 
-    def __init__(self, s, lock, t = None):
-        with lock:
-            for c in s:
-                sys.stdout.write(c)
-                sys.stdout.flush()
-                if t:
-                    time.sleep(t)
-                else:
-                    time.sleep(0.024)
+    def __init__(self, s, lock, t = None, q = None):
+        count = 0
+        if q:
+            while q.empty() is True:
+                if count > 0:
+                    # wait the time of printing 1/2 a line of characters before printing next line.
+                    time.sleep(11)
+                with lock:
+                    self.printer(s, t)
+                    # wait for update on queue.
+                    time.sleep(0.3)
+                    # increase number of count to indicate how many times this while loop has been enacted.
+                    count += 1
+
+            while q.empty() is False:
+                # queue may not stay empty, need to trigger class end. sys.exit() won't work here...
+                # sys.exit()
+                # change value of count from int to str for str to be picked up by following if statement.
+                count = "exit"
+
+            if count == "exit":
+                # change q so that it is no longer a queue.Queue()
+                q = None
+                # exit class and thread.
+                sys.exit()
+        else:
+            with lock:
+                self.printer(s, t)
+
+    def printer(self, s, t = None):
+        """
+            code for actually printing each letter of the string one by one. Separated from __init__ to avoid repetition.
+        """
+        for c in s:
+            sys.stdout.write(c)
+            sys.stdout.flush()
+            if t:
+                time.sleep(t)
+            else:
+                time.sleep(0.024)
 
 class ProcessTakingPlace:
     """
@@ -75,18 +110,25 @@ class ProcessTakingPlace:
             t(float/empty list) : Optional input given if downtime between printing characters needs to be changed from
                                   default of 0.024 seconds.
 
-            miss(None/True)     : Optional input given if the user message should not be printed along with '-----'
+            miss(None/True)     : Optional. Input given if the user message should not be printed along with '-----'
                                   when function is called.
+
+            q(queue.Queue)      : Optional. Included if information from another thread needs to be passed to the
+                                  Core.delay_print function in order to disrupt printing of str characters one by one
+                                  while waiting for other threads are being executed.
     """
 
-    def __init__(self, lock, t, miss = None):
+    def __init__(self, lock, t, miss = None, q = None):
         if not miss:
+            # print user message.
             text = str("                                      {bcolors.OKBLUE}Thank you. Processing taking place.")
             SlowMessageLines(text, lock)
         text = str(
             f"{bcolors.OKBLUE}----------------------------------------------------------------------------------------"
             f"----------------------{bcolors.ENDC}\n")
-        if t:
+        if q:
+            t0 = th.Thread(target=Core.delay_print, args=(text, lock, t, q))
+        elif t and not q:
             t0 = th.Thread(target=Core.delay_print, args=(text, lock, t))
         else:
             t0 = th.Thread(target=Core.delay_print, args=(text, lock))
@@ -224,6 +266,7 @@ class ErrorMessages:
         Class definitions
             argv_dict(dict) : Dictionary of partial error message strings related to each commandline argument.
     """
+
     argv_dict = {"1": f"{bcolors.ITALIC}the name of the {bcolors.WARNING}{bcolors.BOLD}directory{bcolors.ENDC}"
                       f"{bcolors.ITALIC}{bcolors.WARN2} of CP2K output files for the {bcolors.WARNING}{bcolors.BOLD}"
                       f"perfect, defect-free material{bcolors.ENDC}{bcolors.ITALIC}{bcolors.WARN2}.",
@@ -246,6 +289,7 @@ class ErrorMessages:
                    "perf_mat_dir_str defect_parent_dir_str chem_pot_dir_str all \n./MAIN.py perf_mat_dir_str "
                    "defect_parent_dir_str chem_pot_dir_str only str_of_defect_subdir \n./MAIN.py perf_mat_subdir_str "
                    "defect_parent_dir_str chem_pot_dir_str except str_of_defect_subdir")
+        # pass text to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text)
 
     @staticmethod
@@ -260,6 +304,7 @@ class ErrorMessages:
                                 "{bcolors.WARN3} \nValid keywords for argument four are:  '{bcolors.WARNING}"
                                 "{bcolors.ITALIC}all{bcolors.WARN3}' / '{bcolors.WARNING}except{bcolors.WARN3}' / "
                                 "'{bcolors.WARNING}only{bcolors.WARN3}'.")
+        # pass text to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text)
 
     @staticmethod
@@ -271,7 +316,7 @@ class ErrorMessages:
                 i(int)          : Number of the argument which triggered the error code.
         """
 
-        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
+        # Don't want to display full file path from / - only directories beyond the set sudo current working directory
         path, cwd = (str(err).split(' ')[-1]).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
@@ -281,6 +326,7 @@ class ErrorMessages:
                                                                                       "{bcolors.WARN3}\n"
                    +"Spaces or dashes within a directories name are not permitted. Rename directory to remove "
                     "spaces/dashes if present in name before rerunning.")
+        # pass text to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text)
 
     @staticmethod
@@ -298,6 +344,7 @@ class ErrorMessages:
                    "{bcolors.WARNING} \nValid methods implemented are:{bcolors.OKCYAN}{bcolors.ITALIC} \n"
                    +f"{', '.join(options)}"+"{bcolors.ENDC}{bcolors.WARN3} \nPlease use commas to separate the names of"
                                             " each method within your answer.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -312,6 +359,7 @@ class ErrorMessages:
         text = str("\n{bcolors.FAIL}WARNING:{bcolors.UNDERLINE}Invalid answer given!{bcolors.ENDC}{bcolors.WARN3} "
                    "\nTry again. Only valid answers are {bcolors.OKCYAN}Y {bcolors.WARN3}and {bcolors.OKCYAN}N"
                    "{bcolors.WARN3}. ")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -328,6 +376,7 @@ class ErrorMessages:
                    "wish for analysis to be performed on the other results asked for please press {bcolors.OKCYAN}"
                    "{bcolors.ITALIC}Crt+C{bcolors.ENDC}{bcolors.WARN3} now. Otherwise press {bcolors.OKCYAN}Y"
                    "{bcolors.WARN3}.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -342,6 +391,7 @@ class ErrorMessages:
         """
 
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}"+f"{err}"+"{bcolors.ENDC}")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -356,7 +406,7 @@ class ErrorMessages:
                                 commands within the current with statement it has acquired and is released.
         """
 
-        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
+        # Don't want to display full file path from / - only directories beyond the set sudo current working directory
         path, cwd = str(Core.UArg.DefD).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
@@ -370,6 +420,7 @@ class ErrorMessages:
                       "{bcolors.WARN2} parent directory. {bcolors.ENDC}{bcolors.WARN3} \nSpaces or dashes within a "
                    "directories name are not permitted. Rename directory to remove spaces/dashes if present in name(s) "
                    "before rerunning.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -384,7 +435,7 @@ class ErrorMessages:
                                 commands within the current with statement it has acquired and is released.
         """
 
-        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
+        # Don't want to display full file path from / - only directories beyond the set sudo current working directory
         path, cwd = str(Core.UArg.DefD).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
@@ -397,8 +448,9 @@ class ErrorMessages:
                     "{bcolors.ITALIC}"+f"{Core.UArg.DefD.split('/')[-1]}"+"{bcolors.ENDC}{bcolors.WARN2} parent "
                                                                           "directory. {bcolors.ENDC}{bcolors.WARN3}\n"
                    +"Spaces or dashes within a directories name are not permitted. Rename directory to remove "
-                    "spaces/dashes if present in name before rerunning with corrected name for{bcolors.BOLD}"
-                    "{bcolors.HEADER}'"+f"{key}"+"{bcolors.ENDC}{bcolors.WARN3} subdirectory.")
+                    "spaces/dashes if present in name before rerunning with corrected name for {bcolors.BOLD}"
+                    "{bcolors.HEADER}'"+f"{key}"+"'{bcolors.ENDC}{bcolors.WARN3} subdirectory.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -440,6 +492,7 @@ class ErrorMessages:
                                                                                      "subdirectories which contain all "
                                                                                      "required filetypes for the "
                                                                                      "method.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -456,20 +509,21 @@ class ErrorMessages:
                                  commands within the current with statement it has acquired and is released.
         """
 
-        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
+        # Don't want to display full file path from / - only directories beyond the set sudo current working directory
         path, cwd = str(path).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}[Errno 2]{bcolors.ENDC}{bcolors.FAIL} Needed "
                    "{bcolors.HEADER}'"+f"{extension}"+"'{bcolors.ENDC}{bcolors.FAIL} file for processing "
                                                       "{bcolors.OKGREEN}charges and spins data for only atoms related to "
-                                                      "{bcolors.ENDC}{bcolors.FAIL}defect{bcolors.ENDC}{bcolors.HEADER}"
-                                                      " could not be found in directory for:"+f"{dirpath}"+"{bcolors.FAIL}."
+                                                      "defect{bcolors.ENDC}{bcolors.FAIL} could not be found in directory"
+                                                      "for{bcolors.ENDC}{bcolors.HEADER}: "+f"{dirpath}"+"{bcolors.FAIL}."
                                                       "{bcolors.WARN3} \n"
                                                       "Subsequently, {bcolors.OKGREEN}charges and spins{bcolors.ENDC}"
                                                       "{bcolors.WARN3} will be processed for all atoms within the "
                                                       "simulation held by directory{bcolors.HEADER}"+f"{dirpath}"+
                                                       "{bcolors.WARN3}")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -483,7 +537,7 @@ class ErrorMessages:
                                 commands within the current with statement it has acquired and is released.
         """
 
-        # Don't want to display full file path from / - only directories beyond the set suedo current working directory
+        # Don't want to display full file path from / - only directories beyond the set sudo current working directory
         path, cwd = str(path).split('/'), str(os.getcwd()).split('/')
         dirpath = '/'.join([directory for directory in path if directory not in cwd])
 
@@ -494,6 +548,7 @@ class ErrorMessages:
                    +"{bcolors.WARN3} \nSubsequently, {bcolors.OKGREEN}Bader charge analysis{bcolors.WARN3}"
                     " cannot be completed at all for results. {bcolors.OKGREEN}Mulliken and Hirshfeld analysis"
                     "{bcolors.WARN3} will, however, still be performed for all results found.")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
     @staticmethod
@@ -512,6 +567,7 @@ class ErrorMessages:
                    "{bcolors.HEADER}'-ELECTRON_DENSITY-1_0.cube'{bcolors.ENDC}{bcolors.FAIL} file for {bcolors.OKGREEN}"
                    "analysis of Bader charges of atoms{bcolors.ENDC}{bcolors.FAIL} could not be found within the "
                    "following directories for:")
+        # pass text & lock to function to print each line of error slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
 
         time.sleep(1)
@@ -519,6 +575,7 @@ class ErrorMessages:
         # want to print each of the strs held in list DirsMissingBader each on a separate line, one by one.
         for dir in DirsMissingBader:
             text = str("{bcolors.HEADER}- "+f"{dir}"+"{bcolors.ENDC}")
+            # pass text & lock to function to print slowly when lock is next unreleased & available.
             SlowMessageLines(text, lock)
 
 

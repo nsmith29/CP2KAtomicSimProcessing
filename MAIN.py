@@ -35,7 +35,7 @@ def save_executables_path(package_path):
 package_path = os.getcwd()  # before os.chdir used, current working directory will be within CP2KAtomicSimProcessor
 save_executables_path(package_path)
 
-# suedo current working directory
+# sudo current working directory
 os.chdir('/Users/appleair/Desktop/PhD/Jupyter_notebooks/Calculations/PBE0_impurities_analysis/Only_PBE0')
 cwd = os.getcwd() # save os.path set by os.chdir command above as a variable
 
@@ -89,22 +89,27 @@ class Start:
         try:
             # test whether correct number of arguments has been given,
             keywrd = str(sys.argv[4])
+            # test whether fourth argument is a valid keyword.
             testkeywrd = Start.test[keywrd]
             # test whether strs given in argvs 1, 2, and 3 correspond to actual directories.
             for i in 1,2,3:
-                # test the existence of directory names given as strings  in command arguments`by changing suedo cwd.
+                # test the existence of directory names given as strings  in command arguments`by changing sudo cwd.
                 os.chdir(os.path.join(cwd,str(sys.argv[i])))
             # reset current working directory back to directory set on line 22.
             os.chdir(cwd)
 
         # execution of error exceptions.
         except IndexError:
+            # trigger error message informing user that 4th commandline argument given was not a valid keyword option.
             ErrorMessages.Main_IndexError()
+            # end programme
             sys.exit(1)
         except KeyError:
+            # trigger error message informing user that they have not given enough commandline arguments
             ErrorMessages.Main_KeyError(keywrd)
             sys.exit(1)
         except FileNotFoundError as err:
+            # trigger error message informing user that
             ErrorMessages.Main_FileNotFoundError(err,i)
             sys.exit(1)
 
@@ -137,22 +142,24 @@ class Start:
         lock = th.Lock()
 
         # printing '-----' across screen while downtime buffer happening in check_users_wants
-        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, [], True))
+        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.25, True, q))
 
         # finding all os.paths() for directories/subdirectories with CP2K results to be included in programme execution.
         t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))
         t2 = th.Thread(target=self.check_users_wants, args=(q, lock))
-        t0.start()
-        t1.start()
-        t2.start()
-        t0.join()
-        t2.join()
+        [x.start() for x in [t0, t1, t2]]
 
-        # printing message for user and '-----' across screen while thread t1 finishes.
-        t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock,0.06))
-        t_.start()
-        t_.join()
-        t1.join()
+        if Core.UArg.Only is False:
+            # self.check_user_wants goes straight through to self.Questions2Ask; '-----' stops printing across screen.
+            [x.join() for x in [t0, t2]]
+            # printing message for user and '-----' across screen while thread t1 finishes.
+            t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.05))
+            t_.start()
+            # t1 still executing Directories_Search.PopulateResultsHolder() at end of Core.Directories_Search.finding_
+            [x.join() for x in [t_, t1]]
+        else:
+            # t1 ended without running Directories_Search.PopulateResultsHolder(); run by sub-thread t3 of t2 instead.
+            [x.join() for x in [t0, t1, t2]]
 
         # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
         if self.stop is True:
@@ -164,27 +171,36 @@ class Start:
         """
             Checking conditions are upheld and no error codes are triggered before continuing to ask the user questions.
             Inputs:
-                q(queue.Queue) : Shared between this function and function Core.Directories_Search.finding_ to allow
-                                 the passing of information from Core.Directories_Search.finding_ to this function
-                                 related to the triggering of a FileNotFoundError if certain subdirectories singled out
-                                 by user don't exist.
+                q(queue.Queue) : Shared between this function and function Core.Directories_Search.finding_ and function
+                                 Core.Messages.delay_print (via Core.ProcessTakingPlace) to allow the passing of
+                                 information:
+                                    1. when Core.UArg.Only is True from Core.Directories_Search.finding_ to this
+                                       function and Core.Messages.delay_print to trigger the printing of '----'
+                                       to be stopped, and a FileNotFoundError if certain subdirectories singled out
+                                       by user don't exist/calling of self.Questions2Ask.
+                                    2. when Core.UArg.Only is False from this function to Core.Messages.delay_print to
+                                       trigger the printing of '----' to be stopped so self.Questions2Ask can be run.
 
                 lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
                                  blocks the ability of any other thread to print until the lock has finished the
                                  printing commands within the current with statement it has acquired and is released.
         """
         if Core.UArg.Only is True:
+            while q.empty() is True:
             # provide buffer downtime for thread in case a given subdirectory for 'only' isn't found & error is flagged.
-            time.sleep(2.75)
+                time.sleep(0.05)
             while q.empty() is False:
-                item = q.get()
+                with lock:
+                    item = q.get()
                 # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
                 if item == "sys.exit(1)":
                     self.stop = True
                     return
-            else:
-                self.Questions2Ask(lock)
+                else:
+                    self.Questions2Ask(lock)
         else:
+            # To stop '------' continuing to be printed across screen.
+            q.put("pass")
             self.Questions2Ask(lock)
 
     def Questions2Ask(self, lock):
@@ -207,16 +223,22 @@ class Start:
 
         # pass text & lock to function to print each line of question slowly when lock is next unreleased & available.
         SlowMessageLines(text, lock)
+        # request user input.
         processing = input()
 
         # test for error in user's input response.
         try:
             for entry in processing.split(', '):
+                # if user input string doesn't match an implemented option for processing method, ValueError triggered.
                 Start.options.index(entry)
         except ValueError:
+            # trigger error informing user that they have given an input which isn't valid once lock is next unreleased.
             ErrorMessages.Main_ValueError1(Start.options, lock)
+            # restate question printed slowly when lock is next unreleased.
             SlowMessageLines(Start.questions["Q1"], lock)
             processing = input()
+
+        # turn processing input str into a list.
         if processing.find(','):
             processing = processing.split(', ')
         else:
@@ -233,30 +255,39 @@ class Start:
                                            "processed:")
         SlowMessageLines(text, lock)
         analysis = str(input()).upper()
+
         try:
+            # if user has given an input which is not 'Y' or 'N', trigger ValueError.
             if analysis not in ['Y', 'N']:
                 raise ValueError
+            # if user wants the WFN result processing method, but says 'N' to this question, trigger NotImplementedError
             while "WFN" in processing and 'Y' not in analysis:
                 raise NotImplementedError
+
         except ValueError:
+            # trigger error informing user that they have given an input which is invalid once lock is next unreleased.
             ErrorMessages.Main_ValueError2(lock)
             SlowMessageLines(Start.questions["Q2"], lock)
             analysis = str(input()).upper()
+
         except NotImplementedError:
+            # trigger error informing user their answers to Q1 & Q2 are incompatible when lock is next unreleased.
             ErrorMessages.Main_NotImplementedError(lock)
             SlowMessageLines(Start.questions["Q2"], lock)
             analysis = str(input()).upper()
 
         # Follow-up Questions to Question 2
         if analysis == 'Y':
+            text = str(Start.questions["Q2fup1"] + "{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'"
+                                                   "{bcolors.OKBLUE} will generate png files of analysed "
+                                                   "results: ")
+            SlowMessageLines(text, lock)
+            display = str(input()).upper()
+
             try:
-                text = str(Start.questions["Q2fup1"]+"{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'"
-                                                     "{bcolors.OKBLUE} will generate png files of analysed "
-                                                     "results: ")
-                SlowMessageLines(text, lock)
-                display = str(input()).upper()
                 if analysis not in ['Y', 'N']:
                     raise ValueError
+
             except ValueError:
                 ErrorMessages.Main_ValueError2(lock)
                 SlowMessageLines(Start.questions["Q2fup1"], lock)
@@ -265,13 +296,15 @@ class Start:
             Core.UserWants.appendVoverwrite('N','N')
 
         elif analysis == 'N':
+            text = str("{bcolors.OKBLUE}If processed_data.txt already exists, data processed in this run will"
+                       f" be appended to file\n" + Start.questions["Q2fup2"])
+            SlowMessageLines(text)
+            overwrite = str(input()).upper()
+
             try:
-                text = str("{bcolors.OKBLUE}If processed_data.txt already exists, data processed in this run will"
-                  f" be appended to file\n"+Start.questions["Q2fup2"])
-                SlowMessageLines(text)
-                overwrite = str(input()).upper()
                 if analysis not in ['Y', 'N']:
                     raise ValueError
+
             except ValueError:
                 ErrorMessages.Main_ValueError2(lock)
                 SlowMessageLines(Start.questions["Q2fup2"], lock)
@@ -387,6 +420,8 @@ class resave_:
 
     @staticmethod
     def RsvAddrss4mp(Address_Book, exectables, CalcKeys, Results):
+
+        print(json.dumps(CalcKeys, indent=1))
 
         Core.Directories_Search.Address_book = Address_Book
         Core.Directories_Search.executables_address = exectables
