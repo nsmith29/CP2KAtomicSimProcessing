@@ -601,31 +601,31 @@ class InDirectory:
                                                             Directories_Search.Address_book)
 
         # finding needed file within perfect directory.
-        for name, run, chrg in Directories_Search.Dir_Calc_Keys["perfect"]:
-            # search for the xyz file containing only the resultant geometry of perfect structure's last geo opt.
-            found, newpath  = self.Outcomes(
-                Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
-                self.method["cp2k_outputs"]["perfect"], False)
+        name, run, chrg = Directories_Search.Dir_Calc_Keys["perfect"][0]
+        # search for the xyz file containing only the resultant geometry of perfect structure's last geo opt.
+        found, newpath  = self.Outcomes(
+            Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+            self.method["cp2k_outputs"]["perfect"], False)
 
-            if found[0] is False:
-                # if last geometry optimization xyz file couldn't be found, search for file of all geometry steps.
-                found2, newpath2 =  self.Outcomes(
-                Directories_Search.Address_book["perfect"][name][run][chrg]["path"], "-1.xyz", False)
+        if found[0] is False:
+            # if last geometry optimization xyz file couldn't be found, search for file of all geometry steps.
+            found2, newpath2 =  self.Outcomes(
+            Directories_Search.Address_book["perfect"][name][run][chrg]["path"], "-1.xyz", False)
 
-                # Assumed that -1.xyz file will always be in perfect structure directory and can be used to make -L.xyz
-                newiterfiles = MakingIntermediaryFiles(
-                    Core.Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
-                    newpath2, "geometry").Return()
+            # Assumed that -1.xyz file will always be in perfect structure directory and can be used to make -L.xyz
+            newiterfiles = MakingIntermediaryFiles(
+                Core.Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+                newpath2, "geometry").Return()
 
-                # append file paths of newly created intermediary files to Address_Book if relevant to processing method
-                [Directories_Search.add_keys_nested_dict(["perfect"][name][run][chrg], [typ], [nwfl],
-                                                         Directories_Search.Address_book)
-                 for typ, nwfl in zip(Directories_Search.Files4Results["geometry"]["intermediary"]["perfect"],
-                                      newiterfiles) if nwfl.endswith(typ)]
-            else:
-                Directories_Search.add_keys_nested_dict(["perfect", [name][run][chrg]],
-                                                        self.method["cp2k_outputs"]["perfect"], [newpath[0]],
-                                                        Directories_Search.Address_book)
+            # append file paths of newly created intermediary files to Address_Book if relevant to processing method
+            [Directories_Search.add_keys_nested_dict(["perfect"][name][run][chrg], [typ], [nwfl],
+                                                     Directories_Search.Address_book)
+             for typ, nwfl in zip(Directories_Search.Files4Results["geometry"]["intermediary"]["perfect"],
+                                  newiterfiles) if nwfl.endswith(typ)]
+        else:
+            Directories_Search.add_keys_nested_dict(["perfect", [name][run][chrg]],
+                                                    self.method["cp2k_outputs"]["perfect"], [newpath[0]],
+                                                    Directories_Search.Address_book)
 
     def Assessment(self, dict_, name, run, chrg, fltyps, inter, lock):
         """

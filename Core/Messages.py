@@ -517,7 +517,7 @@ class ErrorMessages:
                    "{bcolors.HEADER}'"+f"{extension}"+"'{bcolors.ENDC}{bcolors.FAIL} file for processing "
                                                       "{bcolors.OKGREEN}charges and spins data for only atoms related to "
                                                       "defect{bcolors.ENDC}{bcolors.FAIL} could not be found in directory"
-                                                      "for{bcolors.ENDC}{bcolors.HEADER}: "+f"{dirpath}"+"{bcolors.FAIL}."
+                                                      " for:{bcolors.ENDC}{bcolors.HEADER} "+f"{dirpath}"+"{bcolors.FAIL}."
                                                       "{bcolors.WARN3} \n"
                                                       "Subsequently, {bcolors.OKGREEN}charges and spins{bcolors.ENDC}"
                                                       "{bcolors.WARN3} will be processed for all atoms within the "
