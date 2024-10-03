@@ -12,7 +12,6 @@ import Core
 import FromFile
 
 
-
 class CntrlChrgSpns:
     """
         Entry control point into charge and spin processing and analysis.
@@ -76,6 +75,93 @@ class CntrlChrgSpns:
         t3.join()
         t4.join()
 
+    # √
+    def AskQuestion(self, q, lock):
+        """
+            OPTION: user want data for all atoms or only atoms related to defect (nearest neighbours and defect atom)?
+
+            User required user input question asked during multiprocessing process via use of sys.stdin() as one of two
+            threads while the second thread finds files of bader charge analysis.
+
+            Inputs:
+                q(queue.Queue) : Shared between this method and the BaderFiles method
+
+                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+                                 blocks the ability of any other thread to print until the lock has finished the
+                                 printing commands within the current with statement it has acquired and is released.
+
+        """
+
+        # sys.stdin allows for command line input to be asked & waited for while within a multiprocessing process.
+        sys.stdin = open(0)
+        while True:
+            text = str(CntrlChrgSpns.questions["Q1"]+"{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'{bcolors.OKBLUE} "
+                                                     "will result in charge and spins being processed for all atoms "
+                                                     "within a calculation:")
+            SlowMessageLines(text, lock)
+            which_atoms = input()
+
+            # send given input from user to input Test4inputError method to assess whether valid input has been given.
+            which_atoms = self.Test4inputError("Q1", which_atoms, lock)
+
+            # must break out of while True loop, otherwise question if repeatedly asked after user input has been given
+            break
+
+        #
+        self.AnswertoOnly(Core.UserWants.BooleanConverter[str(which_atoms).upper()])
+
+        # allow rest of self.BaderFile() to run now user given answer and Core.InDirectory() is done.
+        q.put("pass")
+
+    #√
+    def BaderFiles(self, q, lock):
+        """
+
+
+            Inputs:
+                q(queue.Queue) :
+
+                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+                                 blocks the ability of any other thread to print until the lock has finished the
+                                 printing commands within the current with statement it has acquired and is released.
+        """
+
+        #
+        Core.InDirectory("charges and spins", "bader").entry(lock)
+
+        # If Core.InDirectory() completes before user answers question in self.AskQuestion(), produce downtime buffer
+        while q.empty() is True:
+            time.sleep(0.2)
+        # When queue given item "pass" to show user has given answer & completed self.AskQuestion, continue function.
+        while q.empty() is False and q.get() == "pass":
+            if Core.InDirectory.BaderBreak is True:
+                #
+                sys.exit(0)
+            if Core.InDirectory.BadersMissing is True:
+                try:
+                    raise FileNotFoundError
+                except FileNotFoundError:
+                    #
+                    ErrorMessages.ProcessingChargesSpins_FileNotFoundError(Core.InDirectory.DirsMissingBader4error, lock)
+
+                while True:
+                    #
+                    text = str(CntrlChrgSpns.questions["Q2"]+"{bcolors.OKBLUE}\nMulliken and Hirshfeld analysis will "
+                                                             "still be performed for all found subdirectories. "
+                                                             "Selecting {bcolors.OKCYAN}'Y'{bcolors.OKBLUE} will result"
+                                                             " in extra datatable columns of Bader analysis data for "
+                                                             "calculations which Bader analysis can be performed for:")
+                    SlowMessageLines(text, lock)
+                    Continue = input()
+
+                    Continue = self.Test4inputError("Q2", Continue, lock)
+                    #
+                    break
+                self.AnswertoBader(Core.UserWants.BooleanConverter[str(Continue).upper()])
+            #
+            break
+
+    # √
     def Test4inputError(self, Q, A, lock):
         """
             Testing for error in user's input response to questions asked.
@@ -111,85 +197,6 @@ class CntrlChrgSpns:
                 A = str(input( )).upper()
 
         return A
-
-    def AskQuestion(self,q, lock):
-        """
-            OPTION: user want data for all atoms or only atoms related to defect (nearest neighbours and defect atom)?
-
-            User required user input question asked during multiprocessing process via use of sys.stdin() as one of two
-            threads while the second thread finds files of bader charge analysis.
-
-            Inputs:
-                q(queue.Queue) :
-
-                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
-                                 blocks the ability of any other thread to print until the lock has finished the
-                                 printing commands within the current with statement it has acquired and is released.
-
-        """
-
-        # sys.stdin allows for command line input to be asked & waited for while within a multiprocessing process.
-        sys.stdin = open(0)
-        while True:
-            text = str(CntrlChrgSpns.questions["Q1"]+"{bcolors.OKBLUE}\nSelecting {bcolors.OKCYAN}'N'{bcolors.OKBLUE} "
-                                                     "will result in charge and spins being processed for all atoms "
-                                                     "within a calculation:")
-            SlowMessageLines(text, lock)
-            with lock:
-                which_atoms = input()
-
-            which_atoms = self.Test4inputError("Q1", which_atoms, lock)
-            q.put('start')
-            # must break out of while True loop, otherwise question if repeatedly asked after user input has been given
-            break
-
-        #
-        self.AnswertoOnly(Core.UserWants.BooleanConverter[str(which_atoms).upper()])
-
-        # allow rest of self.BaderFile() to run now user given answer and Core.InDirectory() is done.
-        q.put("pass")
-
-    def BaderFiles(self,q, lock):
-        """
-
-
-            Inputs:
-                q(queue.Queue) :
-
-                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
-                                 blocks the ability of any other thread to print until the lock has finished the
-                                 printing commands within the current with statement it has acquired and is released.
-        """
-
-        #
-        Core.InDirectory("charges and spins", lock, "bader")
-        print("done")
-
-        # If Core.InDirectory() completes before user answers question in self.AskQuestion(), produce downtime buffer
-        while q.empty() is True:
-            time.sleep(0.2)
-        # When queue given item "pass" to show user has given answer & completed self.AskQuestion, continue function.
-        while q.empty() is False and q.get() == "pass":
-            if Core.InDirectory.BaderBreak is True:
-                sys.exit(0)
-            if Core.InDirectory.BadersMissing is True:
-                try:
-                    raise FileNotFoundError
-                except FileNotFoundError:
-                    ErrorMessages.ProcessingChargesSpins_FileNotFoundError(Core.InDirectory.DirsMissingBader4error, lock)
-                while True:
-                    text = str(CntrlChrgSpns.questions["Q2"]+"{bcolors.OKBLUE}\nMulliken and Hirshfeld analysis will "
-                                                             "still be performed for all found subdirectories. "
-                                                             "Selecting {bcolors.OKCYAN}'Y'{bcolors.OKBLUE} will result"
-                                                             " in extra datatable columns of Bader analysis data for "
-                                                             "calculations which Bader analysis can be performed for:")
-                    SlowMessageLines(text, lock)
-                    Continue = input()
-
-                    Continue = self.Test4inputError("Q2", Continue, lock)
-                    break
-                self.AnswertoBader(Core.UserWants.BooleanConverter[str(Continue).upper()])
-            break
 
     def AllAtomsPerfect(self):
         """
@@ -240,7 +247,7 @@ class CntrlChrgSpns:
 
         """
         self.CreateDefinition()
-        Core.InDirectory("charges and spins", lock, "only")
+        Core.OnlySpinsChargesOpt("charges and spins", lock, "only")
 
     def AllAtomsDefectSetup(self):
         """
@@ -255,15 +262,15 @@ class CntrlChrgSpns:
         """
         j = 0
 
-    @classmethod
+    @classmethod #√
     def AnswertoOnly(cls, bool):
         CntrlChrgSpns.NNandDef = bool
 
-    @classmethod
+    @classmethod #√
     def AnswertoBader(cls, bool):
         CntrlChrgSpns.ContBdr = bool
 
-    @classmethod
+    @classmethod #√
     def CreateDefinition(cls):
         """
 

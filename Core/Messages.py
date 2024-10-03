@@ -42,25 +42,29 @@ class delay_print:
         Inputs:
             s(str)         : String to be printed character by character.
 
-            lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
-                             blocks the ability of any other thread to print until the lock has finished the printing
-                             commands within the current with statement it has acquired and is released.
+            lock(th.Lock)  : Unowned lock synchronization primitive shared
+                             between threads which when called upon blocks the ability
+                             of any other thread to print until the lock has finished the
+                             printing commands within the current with statement it has
+                             acquired and is released.
 
-            t(float)       : Optional. Input given if downtime between printing characters needs to be changed from
-                             default of 0.024 seconds.
+            t(float)       : Optional. Input given if downtime between printing
+                             characters needs to be changed from default of 0.024
+                             seconds.
 
-            q(queue.Queue) : Optional. Included if information from another thread needs to be passed to this function
-                             in order to disrupt printing of str characters one by one while waiting for other threads
-                             are being executed.
+            q(queue.Queue) : Optional. Included if information from another
+                             thread needs to be passed to this method in order to
+                             disrupt printing of str characters one by one while waiting
+                             for other threads are being executed.
     """
 
     def __init__(self, s, lock, t = None, q = None):
         count = 0
         if q:
-            while q.empty() is True:
+            if q.empty() is True:
                 if count > 0:
                     # wait the time of printing 1/2 a line of characters before printing next line.
-                    time.sleep(11)
+                    time.sleep(22)
                 with lock:
                     self.printer(s, t)
                     # wait for update on queue.
@@ -68,7 +72,7 @@ class delay_print:
                     # increase number of count to indicate how many times this while loop has been enacted.
                     count += 1
 
-            while q.empty() is False:
+            if q.empty() is False:
                 # queue may not stay empty, need to trigger class end. sys.exit() won't work here...
                 # sys.exit()
                 # change value of count from int to str for str to be picked up by following if statement.
@@ -78,7 +82,7 @@ class delay_print:
                 # change q so that it is no longer a queue.Queue()
                 q = None
                 # exit class and thread.
-                sys.exit()
+                sys.exit(0)
         else:
             with lock:
                 self.printer(s, t)
@@ -99,22 +103,27 @@ class ProcessTakingPlace:
     """
         Printing of buffer user statement and '----'.
 
-        Printing in times of visual downtime (i.e no printing of questions/warnings/errors/results) to indicate that
-        the programme is not ideal and processing is taking place.
+        Printing in times of visual downtime (i.e no printing of questions/warnings/
+        errors/results) to indicate that the programme is not ideal and processing is
+        taking place.
 
         Inputs:
-            lock(th.Lock)       : Unowned lock synchronization primitive shared between threads which when called upon
-                                  blocks the ability of any other thread to print until the lock has finished the
-                                  printing commands within the current with statement it has acquired and is released.
+            lock(th.Lock)       : Unowned lock synchronization primitive shared
+                                  between threads which when called upon blocks the ability
+                                  of any other thread to print until the lock has finished the
+                                  printing commands within the current with statement it has
+                                  acquired and is released.
 
-            t(float/empty list) : Optional input given if downtime between printing characters needs to be changed from
-                                  default of 0.024 seconds.
+            t(float/empty list) : Optional input given if downtime between printing
+                                  characters needs to be changed from default of 0.024
+                                  seconds.
 
-            miss(None/True)     : Optional. Input given if the user message should not be printed along with '-----'
-                                  when function is called.
+            miss(None/True)     : Optional. Input given if the user message should
+                                  not be printed along with '-----' when method is called.
 
-            q(queue.Queue)      : Optional. Included if information from another thread needs to be passed to the
-                                  Core.delay_print function in order to disrupt printing of str characters one by one
+            q(queue.Queue)      : Optional. Included if information from another
+                                  thread needs to be passed to the Core.delay_print method
+                                  in order to disrupt printing of str characters one by one
                                   while waiting for other threads are being executed.
     """
 
@@ -190,7 +199,8 @@ class linewidth:
             trim line down to 110 characters or less.
 
             Inputs:
-                j(int)      : Count of characters on current line after adding the characters of item.
+                j(int)      : Count of characters on current line after adding the
+                              characters of item.
 
                 trial(list) : List of broken up string.
 
@@ -230,14 +240,16 @@ class linewidth:
 
 class SlowMessageLines:
     """
-        Delayed printing of whole lines of text to commandline terminal.
+        Delayed printing of whole lines of text to command line terminal. Slowing down pace at which information given.
 
         Inputs:
             message(str)  : Message to be printed to the commandline terminal.
 
-            lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                            blocks the ability of any other thread to print until the lock has finished the printing
-                            commands within the current with statement it has acquired and is released.
+            lock(th.Lock) : Optional. Unowned lock synchronization primitive shared
+                            between threads which when called upon blocks the ability of
+                            any other thread to print until the lock has finished the printing
+                            commands within the current with statement it has acquired and
+                            is released.
     """
 
     def __init__(self, message, lock = None):
@@ -264,7 +276,8 @@ class ErrorMessages:
                                                 named as so: {py filename error occurred in}_{type of error occurred}.
 
         Class definitions
-            argv_dict(dict) : Dictionary of partial error message strings related to each commandline argument.
+            argv_dict(dict) : Dictionary of partial error message strings related to
+                              each commandline argument.
     """
 
     argv_dict = {"1": f"{bcolors.ITALIC}the name of the {bcolors.WARNING}{bcolors.BOLD}directory{bcolors.ENDC}"
@@ -311,7 +324,8 @@ class ErrorMessages:
     def Main_FileNotFoundError(err,i):
         """
             Inputs:
-                err(error code) : Error code returned when one of the named directories in commandline arguments 1-3.
+                err(error code) : Error code returned when one of the named
+                                  directories in commandline arguments 1-3.
 
                 i(int)          : Number of the argument which triggered the error code.
         """
@@ -333,11 +347,14 @@ class ErrorMessages:
     def Main_ValueError1(options, lock):
         """
             Inputs:
-                options(list) : List of the methods of data processing the user can choose from.
+                options(list) : List of the methods of data processing the user can
+                                choose from.
 
-                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                                blocks the ability of any other thread to print until the lock has finished the printing
-                                commands within the current with statement it has acquired and is released.
+                lock(th.Lock) : Unowned lock synchronization primitive shared
+                                between threads which when called upon blocks the ability
+                                of any other thread to print until the lock has finished the
+                                printing commands within the current with statement it has
+                                acquired and is released.
         """
 
         text = str("\n{bcolors.FAIL}ERROR: {bcolors.UNDERLINE}Invalid results type given!{bcolors.ENDC}"
@@ -351,9 +368,11 @@ class ErrorMessages:
     def Main_ValueError2(lock):
         """
             Inputs:
-                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                                blocks the ability of any other thread to print until the lock has finished the printing
-                                commands within the current with statement it has acquired and is released.
+                lock(th.Lock) : Unowned lock synchronization primitive shared
+                                between threads which when called upon blocks the ability
+                                of any other thread to print until the lock has finished the
+                                printing commands within the current with statement it has
+                                acquired and is released.
         """
 
         text = str("\n{bcolors.FAIL}WARNING:{bcolors.UNDERLINE}Invalid answer given!{bcolors.ENDC}{bcolors.WARN3} "
@@ -366,9 +385,11 @@ class ErrorMessages:
     def Main_NotImplementedError(lock):
         """
             Inputs:
-                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                                blocks the ability of any other thread to print until the lock has finished the printing
-                                commands within the current with statement it has acquired and is released.
+                lock(th.Lock) : Unowned lock synchronization primitive shared between
+                                threads which when called upon blocks the ability of any
+                                other thread to print until the lock has finished the printing
+                                commands within the current with statement it has
+                                acquired and is released.
         """
 
         text = str("\n{bcolors.FAIL}WARNING: {bcolors.UNDERLINE}Results asked to be processed include 'WFN'. "

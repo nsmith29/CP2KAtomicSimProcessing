@@ -6,7 +6,7 @@ import os
 import FromFile
 import Core
 # import Presentation
-from Core import Extension
+# from Core import Extension
 
 class SetUpPdos(FromFile.OnlyNeutralWanted):
     def __init__(self):

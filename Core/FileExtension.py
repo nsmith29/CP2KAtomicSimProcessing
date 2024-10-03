@@ -44,11 +44,11 @@ class Directories_Search:
                                            also given.
     """
 
-    Address_book = {"perfect": dict(), "defect": dict()}
+    Address_book = {"perfect": dict(), "defect": dict()}  # √
 
-    Dir_Calc_Keys = {"perfect": [], "defect": []}
+    Dir_Calc_Keys = {"perfect": [], "defect": []}  # √
 
-    executables_address = None
+    executables_address = None  # property √
 
     Files4Results ={"band structure":
                         {"cp2k_outputs":
@@ -137,8 +137,8 @@ class Directories_Search:
                              {".clt.png"}},
                     "geometry":
                         {"cp2k_outputs":
-                             {"perfect":["-L.xyz"                            # Check if present in defect folder, check
-                                                                             # if "-1.xyz" is present.
+                             {"perfect":["-1.xyz"                            # xyz file with geometry of structure at
+                                                                             # every geometry optimization step
 
                                          ,".log"]                            # Lattice parameters.
 
@@ -146,15 +146,14 @@ class Directories_Search:
                                                                              # particular defect to be displayed at end
                                                                              # of processing and display{??}.
 
-                                         ,".log"                             # Lattice parameters.
-
-                                         ,"-L.xyz"]                          # Check if present in defect folder, check
-                                                                             # if "-1.xyz" is present.
+                                         ,".log"]                             # Lattice parameters.
                               },
                          "intermediary":
-                             {"perfect": ["-1.xyz"]
+                             {"perfect": ["-L.xyz"]                          # To compare final geometry of perfect with
+                                                                             # final geometry of defect for displacements
 
-                              , "defect": ["-1.xyz"]
+                              , "defect": ["-L.xyz"]                         # To compare final geometry of perfect with
+                                                                             # final geometry of defect for displacements
                               },
                          "final_output":
                              {".distVdisp.png"                               #
@@ -166,7 +165,7 @@ class Directories_Search:
                     "IPR":"",
                     "PDOS":"",
                     "WFN":"",
-                    "work function":""}
+                    "work function":""}  # √
 
     def __init__(self,f):
         self._f = f
@@ -190,13 +189,20 @@ class Directories_Search:
             filenames found at each layer by os.walk() on to sub function _log for every subdirectory or when certain
             conditions are met if restrictions [only or except used in command line arguments] are given by user.
 
+            Inputs:
+                q(queue.Queue) :
+
+                lock(th.Lock)  :
+
         """
 
         # first start to search for log file within perfect directory.
         Directories_Search.start_setup()
 
+        t = time.time()
         layer, w= 1, os.walk(Core.UArg.DefD)
         # traversing directory tree of defect parent directory in top-down approach
+        # √
         for (path, dir, filenames) in w:
             # enacting search in all except subdirs named
             if Core.UArg.Expt is True and not path.endswith(tuple(Core.UArg.SubD)):
@@ -206,6 +212,7 @@ class Directories_Search:
             elif Core.UArg.Only is True and path.endswith(tuple(Core.UArg.SubD)):
                 Directories_Search.change_key(path)
                 Directories_Search.found(path, dir, filenames)
+                break
 
             # enacting search in all subdirs
             elif Core.UArg.Expt is False and Core.UArg.Only is False:
@@ -241,6 +248,7 @@ class Directories_Search:
         else:
             # trigger population of results holding dictionary.
             Directories_Search.PopulateResultsHolder()
+        print("done in", time.time() - t)
 
     @staticmethod
     def found(path, dir, filenames):
@@ -270,6 +278,8 @@ class Directories_Search:
             for (path1, dir1, files1) in w:
                 Directories_Search._logs(path1, files1, "defect")
                 layer+= 1
+                break
+
         else:
             Directories_Search._logs(path, filenames, "defect")
 
@@ -292,24 +302,25 @@ class Directories_Search:
         for file in filenames:
             if file.endswith(".log") and not path.endswith(".ipynb_checkpoints"):
                 # Get project name, run type and charge state from .log file.
-                chrg_stt, name, rn_typ  = FromFile.FromLog(os.path.join(path, file), ["original"]).Return()
+                result = FromFile.FromLog(os.path.join(path, file), ["all"]).Return()
+                # chrg_stt, name, rn_typ  = FromFile.FromLog(os.path.join(path, file), ["original"]).Return()
 
                 # start sub-thread for populating Directories_Search.Dir_Calc_Keys with extracted variables
-                t1_ = th.Thread(target=Directories_Search.add_to_Dir_Calc_Keys, args=(dict_heading, name[0],
-                                                                                      rn_typ[0], chrg_stt[0],
-                                                                                      Directories_Search.Dir_Calc_Keys))
-                # start sub-thread for populating Directories_Search.Address_book with extracted variables and os.paths
-                t2_ = th.Thread(target=Directories_Search.add_keys_nested_dict, args=([dict_heading, name[0],
-                                                                                       rn_typ[0], chrg_stt[0]],
-                                                                                      ["path", ".log"],
-                                                                                      [path, os.path.join(path, file)],
-                                                                                      Directories_Search.Address_book))
-                [x.start() for x in [t1_, t2_]]
-                [x.join() for x in [t1_, t2_]]
+                # t1_ = th.Thread(target=Directories_Search.add_to_Dir_Calc_Keys, args=(dict_heading, name[0],
+                #                                                                       rn_typ[0], chrg_stt[0],
+                #                                                                       Directories_Search.Dir_Calc_Keys))
+                # # start sub-thread for populating Directories_Search.Address_book with extracted variables and os.paths
+                # t2_ = th.Thread(target=Directories_Search.add_keys_nested_dict, args=([dict_heading, name[0],
+                #                                                                        rn_typ[0], chrg_stt[0]],
+                #                                                                       ["path", ".log"],
+                #                                                                       [path, os.path.join(path, file)],
+                #                                                                       Directories_Search.Address_book))
+                # [x.start() for x in [t1_, t2_]]
+                # [x.join() for x in [t1_, t2_]]
 
                 break
 
-    @staticmethod
+    @staticmethod # √
     def PopulateResultsHolder():
         """
             Populating results dictionary, Core.ProcessCntrls.ProcessResults, with calc dirs & result processing methods
@@ -345,7 +356,7 @@ class Directories_Search:
                 if sub in Core.UArg.FdSD:
                     Core.UArg.FdSD[sub]= True
 
-    @classmethod
+    @classmethod # √
     def add_keys_nested_dict(cls, keys, subkeys, paths, d):
         """
             Adding nested dictionary data to pre-existing dictionary entries, instead of creating new entry of same key.
@@ -386,8 +397,8 @@ class Directories_Search:
         except TypeError:
             print(keys, d)
 
-    @classmethod
-    def add_to_Dir_Calc_Keys(cls, dict_, name, run, chrg, d = None):
+    @classmethod # √
+    def add_to_Dir_Calc_Keys(cls, dict_, name, run, chrg, d = None): # √
         """
             Adding list of strs of dict nested keys - name, run, and chrg - for specific calc to separate dict.
 
@@ -422,6 +433,8 @@ class Directories_Search:
 
 class InDirectory:
     """
+        Finding specific files needed for particular result processing methods inside directories of CP2K output files.
+
         Definitions:
             BaderMissing(None->True)       : To be turned True if some defect subdirectories are found not to contain
                                              either the CP2K output file and intermediary file needed for bader charge
@@ -446,17 +459,10 @@ class InDirectory:
                                              of all subdirectories in which needed files couldn't be found as lists that
                                              matches a lists in Directories_Search.Dir_Calc_Keys.
 
-
-
         Inputs:
             keywrd(str)                    : Keyword corresponding to the result processing method currently being
                                              worked on which should also be one of the outer dictionary keys within the
                                              Directories_Search.Files4Results directory.
-
-            lock(th.Lock)                  : Unowned lock synchronization primitive shared between threads which when
-                                             called upon blocks the ability of any other thread to print until the lock
-                                             has finished the printing commands within the current with statement it has
-                                             acquired and is released.
 
             subkeywrd(None/str)            : Optional keyword corresponding to a sub-part of the keywrd result
                                              processing method. Will be a key str within first nested dictionary in the
@@ -474,158 +480,32 @@ class InDirectory:
     DirsMissingBader4error = []
 
 
-    def __init__(self, keywrd, lock, subkeywrd = None):
+    def __init__(self, keywrd, subkeywrd = None):
         # only certain keywrds will have a subkeywrd included in their processing. Account for this.
         self.method = Directories_Search.Files4Results[keywrd][subkeywrd] if not subkeywrd == None else \
             Directories_Search.Files4Results[keywrd]
 
         self.keywrd, self.subkeywrd  = keywrd, subkeywrd
 
-        if keywrd == "charges and spins" and subkeywrd == "only":
-            # need special separate function for particular combination of keywrd and subkeywrd.
-            self.OnlySpinsChargesOpt(lock)
 
-        else:
-            # 1st check intermediary files present, if intermediary files required, in each subdirectory
-            nd, try4intr = [self.method.get("intermediary"), True] if "intermediary" in self.method.keys() \
-                else [self.method.get("cp2k_outputs"), False]
-
-            for dict_type, filetypes in nd.items():
-                for name, run, chrg in Directories_Search.Dir_Calc_Keys[dict_type]:
-                    self.Assessment(dict_type, name, run, chrg, filetypes, try4intr, lock)
-
-    def Outcomes(self, dirpath, fltyps, test):
+    def entry(self, lock):
         """
-            Sort out the variables returned from self.finding to give two list of bool answers and os_path/None strs.
-
-            Created to stop code repetition.
-
-            Inputs:
-                dirpath(os.path)    : Path of subdirectory in which the file is being searched for
-
-                fltyps(str)         : Name/extension of file being searched for
-
-                test(bool)          : If True, testing the function by printing up certain steps to ensure function
-                                      running as should. Input to be removed from final version.
-
-            Outputs:
-                found(list of bool) : Each item corresponds to the item of the same index within fltyps. True if file
-                                      found within path, False if file not found within path
-
-                newpath(os.paths)   : Each item corresponds to the item of the same index within fltyps. If
-                                      corresponding item in found is True, the found file path which matches the
-                                      name/extension of file.
-        """
-
-        # outcomes  either [bool1, path1] for 1 file or [[bool1, path1],[bool2, path2],...] for multiple
-        outcomes = self.finding(dirpath, fltyps[0], test) if len(fltyps) == 1 else \
-            [self.finding(dirpath, fltyp, test) for fltyp in fltyps]
-        # convert multiple files case from [[bool1, path1],[bool2, path2],...] to [bool1, path1, bool2, path2,...]
-        outcomes = [item for row in outcomes for item in row] if type(outcomes[0]) is not bool else outcomes
-        # make to lists - found will be all bool variables [bool1, bool2,...], newpath is all paths [path1, path2,...]
-        found, newpath = outcomes[::2], outcomes[1::2]
-
-        return found, newpath
-
-    def FileErrorOnlySpinsCharges(self, extension, dict_, name, run, chrg, lock):
-        """
-            Error handler for self.OnlySpinsChargesOpt function. Created to stop code repetition.
-
-            Inputs:
-                extension(str) : File extensions of file needed for completion of the result process method of charges
-                                 and spins for only atoms related to the defect.
-
-                dict_(str)     : item key of outermost dictionary with the Directories_Search.Address_book
-                                 dictionary
-
-                name(str)      : Project name of the particular defect geometry/placement/impurity inclusion
-                                 of the subdirectory being searched for intermediary file/CP2K output file.
-
-                run(str)       : Run type of the calculation of the particular defect geometry/placement/
-                                 impurity inclusion of the subdirectory being searched for intermediary file/
-                                 CP2K output file.
-
-                chrg(int)      : Charge state of the calculation of the particular defect geometry/placement/
-                                 impurity inclusion of the subdirectory being searched for intermediary file/
-                                 CP2K output file.
-
-                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
-                                 blocks the ability of any other thread to print until the lock has finished the
-                                 printing commands within the current with statement it has acquired and is released.
-        """
-
-        try:
-            raise FileNotFoundError
-        except FileNotFoundError:
-            # trigger error informing user ext_ wasn't found - analysis of only defect atoms can't be done 4 subdir.
-            ErrorMessages.FileExtension_FileNotFoundError4ChargesAndSpinsOnly(extension,
-                                                                              Directories_Search.Address_book
-                                                                              [dict_][name][run]
-                                                                              [chrg]["path"], lock)
-            # update corresponding class definition to reflect analysis of only defect atoms can't be done 4 subdir.
-            self.UpdateMissingDefinitions(self.subkeywrd, dict_, name, run, chrg)
-
-    def OnlySpinsChargesOpt(self, lock):
-        """
-            Special function for finding files needed for processing of charges & spins for only atoms related to defect.
+            New entry into InDirectory to avoid code in this method being executed by inheritance of OnlySpinsChargesOpt
 
             Inputs:
                 lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
                                 blocks the ability of any other thread to print until the lock has finished the printing
                                 commands within the current with statement it has acquired and is released.
-            -
         """
 
-        # start with finding needed files within defect directories.
-        for name, run, chrg in Directories_Search.Dir_Calc_Keys["defect"]:
-            time.sleep(0.3)
-            # search for file with ',inp' and get two lists, one purely of bools and one purely of os.path()s.
-            found, newpath = self.Outcomes(
-                Directories_Search.Address_book["defect"][name][run][chrg]["path"], [".inp"], False)
-            if found[0] is False:
-                # send information about directory in which .inp file couldn't be found in to error handling function.
-                self.FileErrorOnlySpinsCharges(".inp", "defect", name, run, chrg, lock)
-            else:
-                # Get name of starting geometry xyz file from .inp file.
-                xyzfilename = FromFile.FromInp(newpath[0], ["charges and spins"]).Return()
-                # search for extracted initial xyz file within the directory path.
-                found2, newpath2 = self.Outcomes(
-                    Directories_Search.Address_book["defect"][name][run][chrg]["path"], xyzfilename, False)
+        print("entered entry, self.method is:",self.method)
+        # 1st check intermediary files present, if intermediary files required, in each subdirectory
+        nd, try4intr = [self.method.get("intermediary"), True] if "intermediary" in self.method.keys() \
+            else [self.method.get("cp2k_outputs"), False]
 
-                if found2[0] is False:
-                    # send information about directory that initial xyz file isn't found in to error handling function.
-                    self.FileErrorOnlySpinsCharges(xyzfilename[0], "defect", name, run, chrg, lock)
-                else:
-                    # initial xyz file has been found - append file path to Address_Book.
-                    Directories_Search.add_keys_nested_dict(["defect", name, run, chrg], ["''.xyz"], [newpath2[0]],
-                                                            Directories_Search.Address_book)
-
-        # finding needed file within perfect directory.
-        name, run, chrg = Directories_Search.Dir_Calc_Keys["perfect"][0]
-        # search for the xyz file containing only the resultant geometry of perfect structure's last geo opt.
-        found, newpath  = self.Outcomes(
-            Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
-            self.method["cp2k_outputs"]["perfect"], False)
-
-        if found[0] is False:
-            # if last geometry optimization xyz file couldn't be found, search for file of all geometry steps.
-            found2, newpath2 =  self.Outcomes(
-            Directories_Search.Address_book["perfect"][name][run][chrg]["path"], "-1.xyz", False)
-
-            # Assumed that -1.xyz file will always be in perfect structure directory and can be used to make -L.xyz
-            newiterfiles = MakingIntermediaryFiles(
-                Core.Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
-                newpath2, "geometry").Return()
-
-            # append file paths of newly created intermediary files to Address_Book if relevant to processing method
-            [Directories_Search.add_keys_nested_dict(["perfect"][name][run][chrg], [typ], [nwfl],
-                                                     Directories_Search.Address_book)
-             for typ, nwfl in zip(Directories_Search.Files4Results["geometry"]["intermediary"]["perfect"],
-                                  newiterfiles) if nwfl.endswith(typ)]
-        else:
-            Directories_Search.add_keys_nested_dict(["perfect", [name][run][chrg]],
-                                                    self.method["cp2k_outputs"]["perfect"], [newpath[0]],
-                                                    Directories_Search.Address_book)
+        for dict_type, filetypes in nd.items():
+            for name, run, chrg in Directories_Search.Dir_Calc_Keys[dict_type]:
+                self.Assessment(dict_type, name, run, chrg, filetypes, try4intr, lock)
 
     def Assessment(self, dict_, name, run, chrg, fltyps, inter, lock):
         """
@@ -658,7 +538,7 @@ class InDirectory:
                                            has finished the printing commands within the current with statement it has
                                            acquired and is released.
         """
-
+        print("in Assessment for", dict_, name, run, chrg)
         KeyCheck, dirpath = Directories_Search.Address_book[dict_][name][run][chrg].keys(), \
                             Directories_Search.Address_book[dict_][name][run][chrg]["path"]
         # remove file extension(s) already found and in Directories_Search.Address_book from fltyps list.
@@ -670,6 +550,140 @@ class InDirectory:
             len(fltyps) == 1 \
             else self.PostAssessmentTree("list", dict_, name, run, chrg, inter, fltyps, found, newpath, lock)
 
+    def Outcomes(self, dirpath, fltyps, test):
+        """
+            Sort out the variables returned from self.finding to give two list of bool answers and os_path/None strs.
+
+            Created to stop code repetition.
+
+            Inputs:
+                dirpath(os.path)    : Path of subdirectory in which the file is being searched for
+
+                fltyps(str)         : Name/extension of file being searched for
+
+                test(bool)          : If True, testing the function by printing up certain steps to ensure function
+                                      running as should. Input to be removed from final version.
+
+            Outputs:
+                found(list of bool) : Each item corresponds to the item of the same index within fltyps. True if file
+                                      found within path, False if file not found within path
+
+                newpath(os.paths)   : Each item corresponds to the item of the same index within fltyps. If
+                                      corresponding item in found is True, the found file path which matches the
+                                      name/extension of file.
+        """
+        # outcomes  either [bool1, path1] for 1 file or [[bool1, path1],[bool2, path2],...] for multiple
+        outcomes = self.finding(dirpath, fltyps[0], test) if len(fltyps) == 1 else \
+            [self.finding(dirpath, fltyp, test) for fltyp in fltyps]
+        # convert multiple files case from [[bool1, path1],[bool2, path2],...] to [bool1, path1, bool2, path2,...]
+        outcomes = [item for row in outcomes for item in row] if type(outcomes[0]) is not bool else outcomes
+        # make to lists - found will be all bool variables [bool1, bool2,...], newpath is all paths [path1, path2,...]
+        found, newpath = outcomes[::2], outcomes[1::2]
+
+        return found, newpath
+
+    # def FileErrorOnlySpinsCharges(self, extension, dict_, name, run, chrg, lock):
+    #     """
+    #         Error handler for self.OnlySpinsChargesOpt function. Created to stop code repetition.
+    #
+    #         Inputs:
+    #             extension(str) : File extensions of file needed for completion of the result process method of charges
+    #                              and spins for only atoms related to the defect.
+    #
+    #             dict_(str)     : item key of outermost dictionary with the Directories_Search.Address_book
+    #                              dictionary
+    #
+    #             name(str)      : Project name of the particular defect geometry/placement/impurity inclusion
+    #                              of the subdirectory being searched for intermediary file/CP2K output file.
+    #
+    #             run(str)       : Run type of the calculation of the particular defect geometry/placement/
+    #                              impurity inclusion of the subdirectory being searched for intermediary file/
+    #                              CP2K output file.
+    #
+    #             chrg(int)      : Charge state of the calculation of the particular defect geometry/placement/
+    #                              impurity inclusion of the subdirectory being searched for intermediary file/
+    #                              CP2K output file.
+    #
+    #             lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+    #                              blocks the ability of any other thread to print until the lock has finished the
+    #                              printing commands within the current with statement it has acquired and is released.
+    #     """
+    #
+    #     try:
+    #         raise FileNotFoundError
+    #     except FileNotFoundError:
+    #         # trigger error informing user ext_ wasn't found - analysis of only defect atoms can't be done 4 subdir.
+    #         ErrorMessages.FileExtension_FileNotFoundError4ChargesAndSpinsOnly(extension,
+    #                                                                           Directories_Search.Address_book
+    #                                                                           [dict_][name][run]
+    #                                                                           [chrg]["path"], lock)
+    #         # update corresponding class definition to reflect analysis of only defect atoms can't be done 4 subdir.
+    #         self.UpdateMissingDefinitions(self.subkeywrd, dict_, name, run, chrg)
+    #
+    # def OnlySpinsChargesOpt(self, lock):
+    #     """
+    #         Special function for finding files needed for processing of charges & spins for only atoms related to defect.
+    #
+    #         Inputs:
+    #             lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
+    #                             blocks the ability of any other thread to print until the lock has finished the printing
+    #                             commands within the current with statement it has acquired and is released.
+    #         -
+    #     """
+    #
+    #     # start with finding needed files within defect directories.
+    #     for name, run, chrg in Directories_Search.Dir_Calc_Keys["defect"]:
+    #         time.sleep(0.3)
+    #         # search for file with ',inp' and get two lists, one purely of bools and one purely of os.path()s.
+    #         found, newpath = self.Outcomes(
+    #             Directories_Search.Address_book["defect"][name][run][chrg]["path"], [".inp"], False)
+    #         if found[0] is False:
+    #             # send information about directory in which .inp file couldn't be found in to error handling function.
+    #             self.FileErrorOnlySpinsCharges(".inp", "defect", name, run, chrg, lock)
+    #         else:
+    #             # Get name of starting geometry xyz file from .inp file.
+    #             xyzfilename = FromFile.FromInp(newpath[0], ["charges and spins"]).Return()
+    #             # search for extracted initial xyz file within the directory path.
+    #             found2, newpath2 = self.Outcomes(
+    #                 Directories_Search.Address_book["defect"][name][run][chrg]["path"], xyzfilename, False)
+    #
+    #             if found2[0] is False:
+    #                 # send information about directory that initial xyz file isn't found in to error handling function.
+    #                 self.FileErrorOnlySpinsCharges(xyzfilename[0], "defect", name, run, chrg, lock)
+    #             else:
+    #                 # initial xyz file has been found - append file path to Address_Book.
+    #                 Directories_Search.add_keys_nested_dict(["defect", name, run, chrg], ["''.xyz"], [newpath2[0]],
+    #                                                         Directories_Search.Address_book)
+    #
+    #     # finding needed file within perfect directory.
+    #     name, run, chrg = Directories_Search.Dir_Calc_Keys["perfect"][0]
+    #     # search for the xyz file containing only the resultant geometry of perfect structure's last geo opt.
+    #     found, newpath  = self.Outcomes(
+    #         Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+    #         self.method["cp2k_outputs"]["perfect"], False)
+    #
+    #     if found[0] is False:
+    #         # if last geometry optimization xyz file couldn't be found, search for file of all geometry steps.
+    #         found2, newpath2 =  self.Outcomes(
+    #         Directories_Search.Address_book["perfect"][name][run][chrg]["path"], "-1.xyz", False)
+    #
+    #         # Assumed that -1.xyz file will always be in perfect structure directory and can be used to make -L.xyz
+    #         newiterfiles = MakingIntermediaryFiles(
+    #             Core.Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+    #             newpath2, "geometry").Return()
+    #
+    #         # append file paths of newly created intermediary files to Address_Book if relevant to processing method
+    #         [Directories_Search.add_keys_nested_dict(["perfect", name, run, chrg], [typ], [nwfl],
+    #                                                  Directories_Search.Address_book)
+    #          for typ, nwfl in zip(Directories_Search.Files4Results["geometry"]["intermediary"]["perfect"],
+    #                               newiterfiles) if nwfl.endswith(typ)]
+    #     else:
+    #         Directories_Search.add_keys_nested_dict(["perfect", name, run, chrg],
+    #                                                 self.method["cp2k_outputs"]["perfect"], [newpath[0]],
+    #                                                 Directories_Search.Address_book)
+
+
+    # √
     def finding(self, path, file, test):
         """
             Searching for file within the os.walk() directory tree of subdirectory path.
@@ -773,7 +787,7 @@ class InDirectory:
 
         return [in_, add2dict_]
 
-    def PostAssessmentTree(self, Type, dict_, name, run, chrg, inter, fltyp, found, newpath, lock):
+    def PostAssessmentTree(self, Type, dct_, name, run, chrg, intr, flty, fnd, nwp, lock, key=None, pro=None, rtn=None):
         """
             Deciding action taken branching function for outcome of whether needed file(s) was located in subdir.
 
@@ -815,34 +829,42 @@ class InDirectory:
                                            has finished the printing commands within the current with statement it has
                                            acquired and is released.
         """
-
+        print("within post assessment tree where inter is", intr, "and found is", fnd)
         options = {"opt1":
-                       {"bool": "inter is True and found is not True",
-                        "list": "inter is True and True not in found or inter is True and True in found and False in "
-                                "found"},
+                       {"bool": "intr is True and fnd is not True",
+                        "list": "intr is True and True not in fnd or intr is True and True in fnd and False in "
+                                "fnd"},
                    "opt2":
-                       {"bool": "inter is True and found is True or inter is False and found is True",
-                        "list": "inter is True and False not in found or inter is False and False not in found"},
+                       {"bool": "intr is True and fnd is True or intr is False and fnd is True",
+                        "list": "intr is True and False not in fnd or intr is False and False not in fnd"},
                    "opt3":
-                       {"bool": "inter is None and found is True", "list": "inter is None and False not in found"},
+                       {"bool": "intr is None and fnd is True",
+                        "list": "intr is None and False not in fnd"},
                    "opt4":
-                       {"bool": "inter is None and found is not True or inter is False and found is not True",
-                        "list": "inter is None and False in found or inter is False and False in found"}}
-
+                       {"bool": "intr is None and fnd is not True or intr is False and fnd is not True",
+                        "list": "intr is None and False in fnd or intr is False and False in fnd"}}
+        if not key:
+            key = self.keywrd
+        if not pro:
+            pro = self.method
 
         # Checking for intermediary file & intermediary file not found/all or some intermediary files not found
         if eval(options["opt1"].get(Type)):
             # rerun assessment function to see if direct CP2K output files are in subdirectory
-            self.Assessment(dict_, name, run, chrg, self.method.get("cp2k_outputs")[dict_], None, lock)
+            self.Assessment(dct_, name, run, chrg, pro.get("cp2k_outputs")[dct_], None, lock)
+            # self.Assessment( pro.get("cp2k_outputs")[dct_], None, lock)
 
         # Checking for intermediary file & intermediate file found/No intermediary file needed, CP2K output file found.
         elif eval(options["opt2"].get(Type)):
             # intermediate/CP2K output file has been found so append their file path to Address_Book.
-            [Directories_Search.add_keys_nested_dict([dict_, name, run, chrg], [fl], [pth],
+            [Directories_Search.add_keys_nested_dict([dct_, name, run, chrg], [fl], [pth],
                                                      Directories_Search.Address_book) for fl, pth in
-             zip(fltyp, newpath)] if Type == "list" else \
-                Directories_Search.add_keys_nested_dict([dict_, name, run, chrg], [fltyp], [newpath],
+             zip(flty, nwp)] if Type == "list" else \
+                Directories_Search.add_keys_nested_dict([dct_, name, run, chrg], [flty], [nwp],
                                                         Directories_Search.Address_book)
+
+            if rtn:
+                rtn.put("pass")
 
         # Intermediary file(s) not found, checking for CP2K output file. CP2K output files found.
         elif eval(options["opt3"].get(Type)):
@@ -851,7 +873,7 @@ class InDirectory:
             q = queue.Queue()
             # start thread to perform tasks to generate intermediate files.
             t0a = th.Thread(target=MakingIntermediaryFiles, args=(
-                Core.Directories_Search.Address_book[dict_][name][run][chrg]["path"], newpath, self.keywrd, q))
+                Core.Directories_Search.Address_book[dct_][name][run][chrg]["path"], nwp, key, q))
             t0a.start()
 
             # start thread which starts printing '---' across the screen as Intermediary files are being created.
@@ -862,9 +884,9 @@ class InDirectory:
                 # item which will be passed to queue will be file paths of the intermediary files generated
                 newiterfiles = q.get()
                 # append file paths of newly created intermediary files to Address_Book if relevant to processing method
-                [Directories_Search.add_keys_nested_dict([dict_, name, run, chrg], [typ], [nwfl],
+                [Directories_Search.add_keys_nested_dict([dct_, name, run, chrg], [typ], [nwfl],
                                                          Directories_Search.Address_book)
-                 for typ, nwfl in zip(self.method["intermediary"][dict_], newiterfiles) if nwfl.endswith(typ)]
+                 for typ, nwfl in zip(pro["intermediary"][dct_], newiterfiles) if nwfl.endswith(typ)]
             t0b.join()
 
         # Intermediary file & CP2K output file not found/No needed intermediary file, CP2K output file not found.
@@ -872,15 +894,15 @@ class InDirectory:
             # different errors & error codes need to be called based on different results processing methods performed.
             try:
                 if self.keywrd == "charges and spins" and self.subkeywrd == "bader":
-                    if dict_ == "perfect":
+                    if dct_ == "perfect":
                         # raise when bader files for perfect structure not found as bader analysis can't be done at all.
                         raise ConnectionAbortedError
                     else:
                         # exception & error will be raised in ProcessingChargesSpins.py, setup for raising of error.
-                        self.UpdateMissingDefinitions(self.subkeywrd, dict_, name, run, chrg)
+                        self.UpdateMissingDefinitions(self.subkeywrd, dct_, name, run, chrg)
                 else:
                     # create list of all files which are missing within directory
-                    missing = [file for file, fnd in zip(fltyp, found) if fnd is False] if Type == "list" else [fltyp]
+                    missing = [file for file, fnd in zip(flty, fnd) if fnd is False] if Type == "list" else [flty]
                     raise FileNotFoundError
 
             except ConnectionAbortedError:
@@ -888,13 +910,17 @@ class InDirectory:
                 self.UpdateMissingDefinitions("perf bader")
                 # trigger error message informing user that bader analysis can't be performed when lock next unreleased.
                 ErrorMessages.FileExtension_ConnectionAbortedError(
-                    Core.Directories_Search.Address_book[dict_][name][run][chrg]["path"], lock)
+                    Core.Directories_Search.Address_book[dct_][name][run][chrg]["path"], lock)
                 # exist thread performing the InDirectory class.
                 sys.exit(0)
 
             except FileNotFoundError:
                 # trigger error message informing user files in missing not found in directory when lock next unreleased
-                ErrorMessages.FileExtension_FileNotFoundError3(self.keywrd, name, run, chrg, missing, lock)
+                ErrorMessages.FileExtension_FileNotFoundError3(key, name, run, chrg, missing, lock)
+                self.UpdateMissingDefinitions(self.subkeywrd, dct_, name, run, chrg) if not self.subkeywrd == None else \
+                    self.UpdateMissingDefinitions(self.keywrd, dct_, name, run, chrg)
+                if rtn:
+                    rtn.put("fail")
 
     @classmethod
     def UpdateMissingDefinitions(cls, subkeyword, dict_= None, name = None, run = None, chrg = None):
@@ -949,6 +975,164 @@ class InDirectory:
             Directories_Search.add_to_Dir_Calc_Keys(dict_, name, run, chrg, Core.InDirectory.Execption2NNandDef)
 
 
+class OnlySpinsChargesOpt(InDirectory):
+    """
+                Special class for finding files needed for processing of charges & spins for only atoms related to defect.
+
+                Inheritance:
+                    InDirectory(class)  : Find specific files needed for particular result processing methods inside
+                                          directories of CP2K output files.
+
+                Inputs:
+                    keywrd(str)         : Keyword corresponding to the result processing method currently being
+                                          worked on which should also be one of the outer dictionary keys within the
+                                          Directories_Search.Files4Results directory.
+
+                    subkeywrd(None/str) : Optional keyword corresponding to a sub-part of the keywrd result
+                                          processing method. Will be a key str within first nested dictionary in the
+                                          item value for item key keywrd within the Directories_Search.Files4Results
+                                          directory.
+
+                    lock(th.Lock)       : Unowned lock synchronization primitive shared between threads which when
+                                          called upon blocks the ability of any other thread to print until the lock
+                                          has finished the printing commands within the current with statement it has
+                                          acquired and is released.
+            """
+
+    def __init__(self, keywrd, lock, subkeywrd):
+        # get inheritance
+        super().__init__(keywrd, subkeywrd)
+        print("in OnlySpinsChargesOpt, self.method is:",self.method)
+
+        self.defect(lock)
+        self.perfect(lock)
+
+    def FileError(self, extension, dict_, name, run, chrg, lock):
+        """
+            Error handler for triggered FileErrors. Created to stop code repetition.
+
+            Inputs:
+                extension(str) : File extensions of file needed for completion of the result process method of charges
+                                 and spins for only atoms related to the defect.
+
+                dict_(str)     : item key of outermost dictionary with the Directories_Search.Address_book
+                                 dictionary
+
+                name(str)      : Project name of the particular defect geometry/placement/impurity inclusion
+                                 of the subdirectory being searched for intermediary file/CP2K output file.
+
+                run(str)       : Run type of the calculation of the particular defect geometry/placement/
+                                 impurity inclusion of the subdirectory being searched for intermediary file/
+                                 CP2K output file.
+
+                chrg(int)      : Charge state of the calculation of the particular defect geometry/placement/
+                                 impurity inclusion of the subdirectory being searched for intermediary file/
+                                 CP2K output file.
+
+                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
+                                 blocks the ability of any other thread to print until the lock has finished the
+                                 printing commands within the current with statement it has acquired and is released.
+        """
+
+        try:
+            raise FileNotFoundError
+        except FileNotFoundError:
+            # trigger error informing user ext_ wasn't found - analysis of only defect atoms can't be done 4 subdir.
+            ErrorMessages.FileExtension_FileNotFoundError4ChargesAndSpinsOnly(extension,
+                                                                              Directories_Search.Address_book
+                                                                              [dict_][name][run]
+                                                                              [chrg]["path"], lock)
+            # update corresponding class definition to reflect analysis of only defect atoms can't be done 4 subdir.
+            self.UpdateMissingDefinitions(self.subkeywrd, dict_, name, run, chrg)
+
+    def defect(self, lock):
+        """
+            Find .inp for name of i.xyz file of defect calc for working out charge & spins for only defect related atoms
+
+            Inputs:
+                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when
+                                called upon blocks the ability of any other thread to print until the lock
+                                has finished the printing commands within the current with statement it has
+                                acquired and is released.
+        """
+        rtn = queue.Queue()
+        # finding needed files within defect directories.
+        for name, run, chrg in Directories_Search.Dir_Calc_Keys["defect"]:
+            print(name, run, chrg)
+            time.sleep(0.3)
+            # search for file with ',inp' and get two lists, one purely of bools and one purely of os.path()s.
+            found, newpath = self.Outcomes(
+                Directories_Search.Address_book["defect"][name][run][chrg]["path"], [".inp"], False)
+
+            self.PostAssessmentTree("bool", "defect", name, run, chrg, False, ".inp",
+                                    found[0], newpath[0], lock, "charge and spin data for only atoms related to defect",
+                                    [], rtn)
+            while rtn.empty() is False and rtn.get() == "pass":
+            # if found[0] is False:
+            #     # send information about directory in which .inp file couldn't be found in to error handling function.
+            #     self.FileError(".inp", "defect", name, run, chrg, lock)
+            #
+            #
+            # else:
+                # Get name of starting geometry xyz file from .inp file.
+                print("made it to rtn.get() == pass")
+                xyzfilename = FromFile.FromInp(newpath[0], ["charges and spins"]).Return()
+                # search for extracted initial xyz file within the directory path.
+                found2, newpath2 = self.Outcomes(
+                    Directories_Search.Address_book["defect"][name][run][chrg]["path"], xyzfilename, False)
+
+                if found2[0] is False:
+                    # send information about directory that initial xyz file isn't found in to error handling function.
+                    self.FileError(xyzfilename[0], "defect", name, run, chrg, lock)
+                else:
+                    # initial xyz file has been found - append file path to Address_Book.
+                    Directories_Search.add_keys_nested_dict(["defect", name, run, chrg], ["''.xyz"], [newpath2[0]],
+                                                            Directories_Search.Address_book)
+                break
+            print("out of while loop")
+            item = rtn.get()
+
+    def perfect(self, lock):
+        """
+            Find -L.xyz file of perfect structure calc for working out charge & spins for only defect related atoms
+
+            Inputs:
+                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when
+                                called upon blocks the ability of any other thread to print until the lock
+                                has finished the printing commands within the current with statement it has
+                                acquired and is released.
+        """
+        # finding needed file within perfect directory.
+        name, run, chrg = Directories_Search.Dir_Calc_Keys["perfect"][0]
+        # search for the xyz file containing only the resultant geometry of perfect structure's last geo opt.
+        found, newpath  = self.Outcomes(
+            Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+            self.method["cp2k_outputs"]["perfect"], False)
+
+        self.PostAssessmentTree("bool", "perfect", name, run, chrg, True, self.method["cp2k_outputs"]["perfect"][0],
+                                found[0], newpath[0], lock, "geometry", Directories_Search.Files4Results["geometry"])
+
+        # if found[0] is False:
+        #     # if last geometry optimization xyz file couldn't be found, search for file of all geometry steps.
+        #     found2, newpath2 =  self.Outcomes(
+        #     Directories_Search.Address_book["perfect"][name][run][chrg]["path"], "-1.xyz", False)
+        #
+        #     # Assumed that -1.xyz file will always be in perfect structure directory and can be used to make -L.xyz
+        #     newiterfiles = MakingIntermediaryFiles(
+        #         Core.Directories_Search.Address_book["perfect"][name][run][chrg]["path"],
+        #         newpath2, "geometry").Return()
+        #
+        #     # append file paths of newly created intermediary files to Address_Book if relevant to processing method
+        #     [Directories_Search.add_keys_nested_dict(["perfect", name, run, chrg], [typ], [nwfl],
+        #                                              Directories_Search.Address_book)
+        #      for typ, nwfl in zip(Directories_Search.Files4Results["geometry"]["cp2k_outputs"]["perfect"],
+        #                           newiterfiles) if nwfl.endswith(typ)]
+        # else:
+        #     Directories_Search.add_keys_nested_dict(["perfect", name, run, chrg],
+        #                                             self.method["cp2k_outputs"]["perfect"], [newpath[0]],
+        #                                             Directories_Search.Address_book)
+
+
 class MakingIntermediaryFiles:
     """
         Creating intermediary files needed for results processing method from given CP2K output files.
@@ -972,7 +1156,7 @@ class MakingIntermediaryFiles:
                                              Core.InDirectory.PostAssessmentTree to allow the returning of New file
                                              os.path()(s) for the newly created intermediary file(s) back to
                                              Core.InDirectory.PostAssessmentTree.
-zxz
+
         Outputs:
             flns4rtrn(str/list of os.path) : New file os.path()(s) for the newly created intermediary file(s).
     """

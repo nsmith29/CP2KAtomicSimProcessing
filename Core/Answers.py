@@ -45,6 +45,7 @@ class UArg:
 
             only(list)        : List of subdirectory names user only wants to be data processed.
     """
+
     PerD = ''
     DefD = ''
     CPtD = ''
@@ -58,9 +59,9 @@ class UArg:
 
     @classmethod
     def ArgumentsSaved(cls, perf_dir, def_dir, chem_pot_dir):
-        UArg.PerD= os.path.join(os.getcwd(),perf_dir)
-        UArg.DefD= os.path.join(os.getcwd(),def_dir)
-        UArg.CPtD= os.path.join(os.getcwd(),chem_pot_dir)
+        UArg.PerD = os.path.join(os.getcwd(),perf_dir)
+        UArg.DefD = os.path.join(os.getcwd(),def_dir)
+        UArg.CPtD = os.path.join(os.getcwd(),chem_pot_dir)
 
     @classmethod
     def ExceptionStated(cls, expt):
@@ -79,20 +80,26 @@ class UserWants:
         Saving commandline inputs given by user related to their analysis and display needs.
 
         Class definitions:
-            AnalysisWants(None -> boolean) : True if user responds 'Y' to question 2 and wants results analysis.
-            DisplayWants(None -> boolean)  : True if user responds 'Y' to Follow-up question 1 and wants to display
-                                             results via GUI.
+            AnalysisWants(None -> boolean) : True if user responds 'Y' to
+                                             question 2 and wants results analysis.
+            DisplayWants(None -> boolean)  : True if user responds 'Y' to
+                                             Follow-up question 1 and wants to display results via GUI.
             BooleanConverter(dict)         : Dictionary used to convert.
-        Inputs:
-            analysis(str)                  : String of either 'Y' or 'N' corresponding to whether user wants analysis
-                                             to be performed.
 
-            display(str)                   : String of either 'Y' or 'N' corresponding to whether user wants results to
-                                             be displayed in a GUI window.
+        Inputs:
+            analysis(str)                  : String of either 'Y' or 'N' corresponding to whether user
+                                             wants analysis to be performed.
+
+            display(str)                   : String of either 'Y' or 'N' corresponding to whether user
+                                             wants results to be displayed in a GUI window.
     """
+
     AnalysisWants = None
+
     DisplayWants = None
+
     Append = None
+
     Overwrite = None
 
     BooleanConverter = {'Y':True,
@@ -117,22 +124,31 @@ class ProcessCntrls:
         Saving the results processing options given by user in commandline input.
 
         Class definitions:
-            ProcessWants(None -> list) : Saved list of result processing methods wanted by user.
-            ProcessResults(dict)       : Empty dictionary to be populated with the same maj item keys of
-                                         Core.Directories_Search.Address_book and then min item keys of each result
-                                         processing method wanted by user with the item values of these min item keys
-                                         being the fully calculated product of the result processing method.
-                                         E.g. for the "charges and spins" result processing method, the item value
-                                         will be the dataframe of Mulliken, Hirshfield, and bader charge and spin
-                                         data.
-            setup(list)                : List of placeholder item values for pairing and creation of inner nested
-                                         dictionary of ProcessResults.
+            ProcessWants(None -> list) : Saved list of result processing
+                                         methods wanted by user.
+            ProcessResults(dict)       : Empty dictionary to be populated with the
+                                         same maj item keys of  Core.Directories_Search.Address_book
+                                         and then min item keys of each result
+                                         processing method wanted by user with the item values of
+                                         these min item keys being the fully calculated product of
+                                         the result processing method.
+
+                                         E.g. for the "charges and spins" result processing method,
+                                         the item value will be the dataframe of Mulliken, Hirshfield,
+                                         and bader charge and spin data.
+
+            setup(list)                : List of placeholder item values for pairing and creation
+                                         of inner nested dictionary of ProcessResults.
 
         Inputs:
-            Processing(list)           : List of result processing options given by user in commandline input.
+            Processing(list)           : List of result processing options given by user in
+                                         commandline input.
     """
+
     ProcessWants = None
+
     setup = None
+
     ProcessResults = {"perfect": dict(), "defect": dict()}
 
     def __init__(self, f):

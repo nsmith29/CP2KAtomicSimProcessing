@@ -195,17 +195,6 @@ class Defining_Defect:
                     dif_atoms.append(str(index))
 
         additional = self.additional(dif_atoms)
-        # additional = []
-        # for atom in dif_atoms:
-        #     for bond in NearestNeighbours.Bonds[self.name[0]][self.name[1]][self.name[2]][self.name[3]]:
-        #         atoms = bond.replace('-', ' ').split()
-        #         if atom == atoms[0] or atom == atoms[1]:
-        #             length1 = len(additional)
-        #             additional.append([atoms[i] for i in range(len(atoms)) if
-        #                                atoms[i] != atom and atoms[i] not in additional and atom[i] not in dif_atoms])
-        #             if length1 != len(additional) and len(additional[-1]) == 1:
-        #                 additional.insert(-1, [additional[-1][0]][0])
-        #             additional.pop(-1)
 
         dif_atoms.extend(additional)
 
@@ -231,18 +220,6 @@ class Defining_Defect:
                     diff = diff + 1 if diff else 1
 
         additional = self.additional(dif_atoms)
-        # additional = []
-        # for atom in dif_atoms:
-        #     for bond in NearestNeighbours.Bonds[self.name[0]][self.name[1]][self.name[2]][self.name[3]]:
-        #         atoms = bond.replace('-', ' ').split()
-        #         if atom == atoms[0] or atom == atoms[1]:
-        #             length1 = len(additional)
-        #             additional.append([atoms[i] for i in range(len(atoms)) if
-        #                                atoms[i] != atom and atoms[i] not in additional and atom[i] not in dif_atoms])
-        #             if length1 != len(additional) and len(additional[-1]) == 1:
-        #                 additional.insert(-1, [additional[-1][0]][0])
-        #             additional.pop(-1)
-
         return additional
 
     def finding_interstitial_defects(self):
@@ -265,17 +242,6 @@ class Defining_Defect:
                     diff = diff + 1 if diff else 1
 
         additional = self.additional(dif_atoms)
-        # additional = []
-        # for atom in dif_atoms:
-        #     for bond in NearestNeighbours.Bonds[self.name[0]][self.name[1]][self.name[2]][self.name[3]]:
-        #         atoms = bond.replace('-', ' ').split()
-        #         if atom == atoms[0] or atom == atoms[1]:
-        #             length1 = len(additional)
-        #             additional.append([atoms[i] for i in range(len(atoms)) if
-        #                                atoms[i] != atom and atoms[i] not in additional and atom[i] not in dif_atoms])
-        #             if length1 != len(additional) and len(additional[-1]) == 1:
-        #                 additional.insert(-1, [additional[-1][0]][0])
-        #             additional.pop(-1)
         dif_atoms.extend(additional)
 
         return dif_atoms
@@ -420,49 +386,51 @@ class Defining_Defect:
 #         self.tot_displacement_sorted = [x for _, x in sorted(zip(self.tot_distance,self.tot_displacement))]
 #         self.tot_displacement_sorted2 = np.sort(self.tot_displacement)
 #
-# class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary, DifferenceInPosition):
-#     SubsGeoDisDataStore = dict()
-#     def __init__(self, atom_index, suf):
-#         self.atom_index = int(atom_index) - 1
-#         FetchGeometryFromPerfectDictionary.__init__(self)
 #
-#         FetchGeometryFromDefectDictionary.__init__(self,suf)
-#         self.defect_site_X = self.X[self.atom_index]
-#         self.defect_site_Y = self.Y[self.atom_index]
-#         self.defect_site_Z = self.Z[self.atom_index]
-#
-#         self.defect_atom = self.atoms[self.atom_index]
-#
-#         DifferenceInPosition.__init__(self, self.totatom, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
-#
-# class MaxDisplacement(SubstitutionalGeometryDisplacement):
-#     def __init__(self, atom_index, suf):
-#         SubstitutionalGeometryDisplacement.__init__(self, atom_index, suf)
-#         print(suf, self.tot_displacement_sorted2[-1])
-#
-# class InterstitionalGeometryDisplacement:
-#     def __init__(self, atom_index):
-#         e = 11
-#         print(e)
-#
-# class VacancyGeometryDisplacement:
-#     def __init__(self, atom_index):
-#         e = 17
-#         print(e)
-#
-# class SubsVacancyGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary):
-#     def __init__(self, indices, suffix):
-#
-#         self.subs = int(indices[0]) - 1
-#         self.vac = int(indices[1]) - 1
-#         FetchGeometryFromPerfectDictionary.__init__(self)
-#
-#         self.vacX = self.perfX[self.vac]
-#         self.vacY = self.perfY[self.vac]
-#         self.vacZ = self.perfZ[self.vac]
-#         FetchGeometryFromDefectDictionary.__init__(self, suffix)
-#
-# class InterVacancyGeometryDisplacement:
-#     def __init__(self, atom_index):
-#         e = 9
-#         print(e)
+#    #
+   # class SubstitutionalGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary, DifferenceInPosition):
+   #     SubsGeoDisDataStore = dict()
+   #     def __init__(self, atom_index, suf):
+   #         self.atom_index = int(atom_index) - 1
+   #         FetchGeometryFromPerfectDictionary.__init__(self)
+   #
+   #         FetchGeometryFromDefectDictionary.__init__(self,suf)
+   #         self.defect_site_X = self.X[self.atom_index]
+   #         self.defect_site_Y = self.Y[self.atom_index]
+   #         self.defect_site_Z = self.Z[self.atom_index]
+   #
+   #         self.defect_atom = self.atoms[self.atom_index]
+   #
+   #         DifferenceInPosition.__init__(self, self.totatom, self.perfX, self.X, self.defect_site_X, self.perfY, self.Y, self.defect_site_Y, self.perfZ, self.Z, self.defect_site_Z)
+   #
+   # class MaxDisplacement(SubstitutionalGeometryDisplacement):
+   #     def __init__(self, atom_index, suf):
+   #         SubstitutionalGeometryDisplacement.__init__(self, atom_index, suf)
+   #         print(suf, self.tot_displacement_sorted2[-1])
+   #
+   # class InterstitionalGeometryDisplacement:
+   #     def __init__(self, atom_index):
+   #         e = 11
+   #         print(e)
+   #
+   # class VacancyGeometryDisplacement:
+   #     def __init__(self, atom_index):
+   #         e = 17
+   #         print(e)
+   #
+   # class SubsVacancyGeometryDisplacement(FetchGeometryFromPerfectDictionary, FetchGeometryFromDefectDictionary):
+   #     def __init__(self, indices, suffix):
+   #
+   #         self.subs = int(indices[0]) - 1
+   #         self.vac = int(indices[1]) - 1
+   #         FetchGeometryFromPerfectDictionary.__init__(self)
+   #
+   #         self.vacX = self.perfX[self.vac]
+   #         self.vacY = self.perfY[self.vac]
+   #         self.vacZ = self.perfZ[self.vac]
+   #         FetchGeometryFromDefectDictionary.__init__(self, suffix)
+   #
+   # class InterVacancyGeometryDisplacement:
+   #     def __init__(self, atom_index):
+   #         e = 9
+   #         print(e)

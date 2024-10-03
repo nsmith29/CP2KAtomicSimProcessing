@@ -78,8 +78,7 @@ def find_at(index, lines, i, result):
     finally:
         for p in range(0, max):
             # extract index 2,4-6,8 in line split list. element - atom element, x/y/z - x/y/z-coord, mass - atomic mass.
-            element, x, y, z, mass = [var[1] for var in enumerate(lines[index + n + p].split()) if
-                                      var[0] in [2, 4, 5, 6, 8]]
+            element, x, y, z, mass = [var[1] for var in enumerate(lines[index + n + p].split()) if var[0] in [2, 4, 5, 6, 8]]
             for f, F in zip([float(x), float(y), float(z), element, mass], [X, Y, Z, ELEMENT, MASS]):
                 # saving extracted data within predefined lists.
                 F.append(f)

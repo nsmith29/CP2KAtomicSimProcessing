@@ -15,12 +15,13 @@ import sys
 import time
 import threading as th
 import queue
-import json
-import multiprocessing as mp
-import multiprocessing.pool
+# import json
+# import multiprocessing as mp
+# import multiprocessing.pool
 import Core
 from Core.Messages import bcolors, ErrorMessages, SlowMessageLines
-import DataProcessing
+from Core.mpPicklingError import ProcessNoDaemonProcess, resave_, Rooting, PoolNoDaemonProcess
+# import DataProcessing
 
 
 def save_executables_path(package_path):
@@ -41,17 +42,35 @@ cwd = os.getcwd() # save os.path set by os.chdir command above as a variable
 
 class Start:
     """
-        Processing command line arguments from user upon running of MAIN.py script.
+        Processing command line arguments upon running of MAIN.py. Decides code path to take, given # of arguments given.
 
         Class definitions
-            test(dict)      : Dictionary of valid keywords for argument four to test whether the 4th commandline argument
-                              given by user is a valid keyword.
+            test(dict)      : Dictionary of valid keywords for argument four to test whether
+                              the 4th commandline argument given by user is a valid keyword.
+            questions(dict) : Dictionary of questions to ask the user within
+                              self.check_users_wants().
+            options(list)   : List of the methods of data processing the user can choose
+                              from.
 
-            questions(dict) : Dictionary of questions to ask the user within self.check_users_wants().
+        Compulsory arguments given by user should represent the following info
+            argv[1](str)   : name of directory containing CP2K output files for the perfect
+                             defect-free material structure.
+            argv[2](str)   : name of parent directory of particular type of defect studied
+                             within material which contains the subdirectories of CP2K
+                             output files for each specific defect calculation run.
+            argv[3](str)   : name of parent directory holding subdirectories containing
+                             CP2K output files for individual calculated reference
+                             chemical potentials for host and/or impurity elements
+                             within material being studied.
+            argv[4](str)   : keyword of either 'all', 'except', or 'only'.
 
-            options(list)   : List of the methods of data processing the user can choose from.
+        Optional argument to be included by user, if argv[4] is except or only, should represent the following info
+            argv[5:](str)  : each argument from the 6th argument onwards should be
+                             the name of a specific subdirectory within the parent
+                             directory named in argv[2].
 
     """
+
     test = {"all":True,
             "except":True,
             "only":True}
@@ -68,22 +87,6 @@ class Start:
                "work function", "test")
 
     def __init__(self):
-        """
-        Decides which code path to take, given number of arguments given by user.
-
-        Compulsory arguments given by user should represent the following info
-            argv[1](str)   : name of directory containing CP2K output files for the perfect defect-free material
-                             structure.
-            argv[2](str)   : name of parent directory of particular type of defect studied within material which contains
-                             the subdirectories of CP2K output files for each specific defect calculation run.
-            argv[3](str)   : name of parent directory holding subdirectories containing CP2K output files for individual
-                             calculated reference chemical potentials for host and/or impurity elements within material
-                             being studied.
-            argv[4](str)   : keyword of either 'all', 'except', or 'only'.
-        Optional argument to be included by user, if argv[4] is except or only, should represent the following info
-            argv[5:](str)  : each argument from the 6th argument onwards should be the name of a specific subdirectory
-                             within the parent directory named in argv[2].
-        """
 
         # testing whether commandline arguments 1-4 given by user trigger any error codes.
         try:
@@ -132,7 +135,7 @@ class Start:
                 elif keywrd == 'except':
                     # saving defect subdir name(s) & enacting settings for data processing of all subdirs except named.
                     Arguments.ExceptionStated(defect)
-        self.stop, t = None, time.time()
+        self.stop = None
 
         ## multithreading set up
 
@@ -142,58 +145,65 @@ class Start:
         lock = th.Lock()
 
         # printing '-----' across screen while downtime buffer happening in check_users_wants
-        t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.25, True, q))
+        # t0 = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.25, True, q))
 
+        Core.Directories_Search.finding_(q, lock)
         # finding all os.paths() for directories/subdirectories with CP2K results to be included in programme execution.
-        t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))
-        t2 = th.Thread(target=self.check_users_wants, args=(q, lock))
-        [x.start() for x in [t0, t1, t2]]
+        # t1 = th.Thread(target=Core.Directories_Search.finding_, args=(q, lock))
+        # t2 = th.Thread(target=self.check_users_wants, args=(q, lock))
+        # [x.start() for x in [t0, t1, t2]]
 
-        if Core.UArg.Only is False:
-            # self.check_user_wants goes straight through to self.Questions2Ask; '-----' stops printing across screen.
-            [x.join() for x in [t0, t2]]
-            # printing message for user and '-----' across screen while thread t1 finishes.
-            t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.05))
-            t_.start()
-            # t1 still executing Directories_Search.PopulateResultsHolder() at end of Core.Directories_Search.finding_
-            [x.join() for x in [t_, t1]]
-        else:
-            # t1 ended without running Directories_Search.PopulateResultsHolder(); run by sub-thread t3 of t2 instead.
-            [x.join() for x in [t0, t1, t2]]
+        # if Core.UArg.Only is False:
+        #     # self.check_user_wants goes straight through to self.Questions2Ask; '-----' stops printing across screen.
+        #     [x.join() for x in [t0, t2]]
+        #     # printing message for user and '-----' across screen while thread t1 finishes.
+        #     t_ = th.Thread(target=Core.ProcessTakingPlace, args=(lock, 0.05))
+        #     t_.start()
+        #     # t1 still executing Directories_Search.PopulateResultsHolder() at end of Core.Directories_Search.finding_
+        #     [x.join() for x in [t_, t1]]
+        # else:
+        #     # t1 ended without running Directories_Search.PopulateResultsHolder(); run by sub-thread t3 of t2 instead.
+        #     [x.join() for x in [t0, t1, t2]]
+        #
+        # # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
+        # if self.stop is True:
+        #      sys.exit(1)
 
-        # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
-        if self.stop is True:
-             sys.exit(1)
-
-        print("done in",time.time()-t)
+        # print("done in",time.time()-t)
 
     def check_users_wants(self, q, lock):
         """
             Checking conditions are upheld and no error codes are triggered before continuing to ask the user questions.
-            Inputs:
-                q(queue.Queue) : Shared between this function and function Core.Directories_Search.finding_ and function
-                                 Core.Messages.delay_print (via Core.ProcessTakingPlace) to allow the passing of
-                                 information:
-                                    1. when Core.UArg.Only is True from Core.Directories_Search.finding_ to this
-                                       function and Core.Messages.delay_print to trigger the printing of '----'
-                                       to be stopped, and a FileNotFoundError if certain subdirectories singled out
-                                       by user don't exist/calling of self.Questions2Ask.
-                                    2. when Core.UArg.Only is False from this function to Core.Messages.delay_print to
-                                       trigger the printing of '----' to be stopped so self.Questions2Ask can be run.
 
-                lock(th.Lock)  : Unowned lock synchronization primitive shared between threads which when called upon
-                                 blocks the ability of any other thread to print until the lock has finished the
-                                 printing commands within the current with statement it has acquired and is released.
+            Inputs:
+                q(queue.Queue) : Shared between this method and method
+                                 Core.Directories_Search.finding_ and method
+                                 Core.Messages.delay_print (via Core.ProcessTakingPlace)
+                                 to allow the passing of information:
+
+                                 1. when Core.UArg.Only is True from
+                                    Core.Directories_Search.finding_ to this method and
+                                    Core.Messages.delay_print to trigger the printing of '----'
+                                    to be stopped, and a FileNotFoundError if certain subdirectories
+                                    singled out by user don't exist/calling of self.Questions2Ask.
+                                 2. when Core.UArg.Only is False from this method to
+                                    Core.Messages.delay_print to trigger the printing of '----' to be
+                                    stopped so self.Questions2Ask can be run.
+
+                lock(th.Lock)  : Unowned lock synchronization primitive shared
+                                 between threads which when called upon blocks the ability
+                                 of any other thread to print until the lock has finished the
+                                 printing commands within the current with statement it has
+                                 acquired and is released.
         """
+
         if Core.UArg.Only is True:
             while q.empty() is True:
             # provide buffer downtime for thread in case a given subdirectory for 'only' isn't found & error is flagged.
                 time.sleep(0.05)
             while q.empty() is False:
-                with lock:
-                    item = q.get()
                 # when 'only' used & a named directory doesn't exist - q sent item to trigger program to stop & end.
-                if item == "sys.exit(1)":
+                if q.get() == "sys.exit(1)":
                     self.stop = True
                     return
                 else:
@@ -212,10 +222,13 @@ class Start:
             triggered by the commandline arguments.
 
             Inputs:
-                lock(th.Lock) : Unowned lock synchronization primitive shared between threads which when called upon
-                                blocks the ability of any other thread to print until the lock has finished the printing
-                                commands within the current with statement it has acquired and is released.
+                lock(th.Lock) : Unowned lock synchronization primitive shared
+                                between threads which when called upon blocks the ability
+                                of any other thread to print until the lock has finished the
+                                printing commands within the current with statement it has
+                                acquired and is released.
         """
+
         # Question one
         text = str(Start.questions["Q1"]+"{bcolors.OKBLUE}\nResults options include: {bcolors.OKCYAN}"+
                            ', '.join(Start.options[0:6])+"                              "+
@@ -321,129 +334,24 @@ class Start:
         Core.UserWants.Save(analysis, display)
 
 
-
-class ProcessNoDaemonProcess(mp.Process):
-    """
-        Modified version of mp.Process specific for this package to make mp.Pool() non-daemonic child processes.
-
-        Daemon attributes will always be turned as False.
-
-        Inheritance:
-            mp.Process() :
-    """
-    @property
-    def daemon(self):
-        return False
-
-    @daemon.setter
-    def daemon(self, value):
-        pass
-
-
-
-class PoolNoDaemonProcess(mp.pool.Pool):
-    """
-        Modified version of mp.pool.Pool specific for this package for mp.Pool() non-daemonic workers.
-
-        Inheritance:
-            mp.pool.Pool() :
-    """
-
-    def Process(self, *args, **kwargs):
-        proc = super(PoolNoDaemonProcess, self).Process(*args,**kwargs)
-        proc.__class__ = ProcessNoDaemonProcess
-
-        return proc
-
-
-class Rooting:
-    """
-        Rooting of mp.Pool() child process to specific code stem for wanted result processing method of child process.
-
-        Wanted entry point function is determined via evaluation and execution of the item value str corresponding to
-        the item key str within optdict which matches the input str value of the child worker process.
-
-        Class definitions:
-            optdict(dict) : Dictionary of specific entry point functions for each implemented result processing method.
-
-        Inputs:
-            want(str)     : str assigned to specific mp.Pool() child process accessing class which equates to the
-                            specific result processing method assigned to the child worker process out of the result
-                            processing methods chosen by user.
-    """
-
-    optdict= {"band structure": None,
-              "charges and spins": "DataProcessing.CntrlChrgSpns",
-              "charge transition levels": None, #DataProcessing.CTLsetup()
-              "geometry": None, #"Presentation.geometryGUI",
-              "IPR": None,
-              "PDOS": None, # "GraphicAnalysis.plotpdos",
-              "WFN": None, # "Presentation.WFNGUI",
-              "work function": None,
-              "test": None}
-
-    def __init__(self, want):
-        run = eval(str("{}()".format(Rooting.optdict.get(want))))
-
-
-class resave_:
-    """
-        Ensuring established data collected from user inputs is accessible within the shared memory of the mp.Pool().
-
-        Memory saved or created outside a mp.Pool() cannot be accessed within the mp.Pool() environment. Therefore, all
-        class definition dictionaries which have been populated or updated since the user executed the commandline
-        argument calling this script will be reset to their defaults upon starting to run the mp.Pool(). As this
-        function is accessed from within the mp.Pool(), important class definition dictionaries can be re-saved back
-        into their same class definitions within the mp.Pool().
-
-        Inputs:
-            Address_Book(dict)  : Outside mp.Pool() version of populated dictionary,
-                                  Core.Directories_Search.Address_book, of os.path strs for needed perfect and defect
-                                  structure CP2K output files and subdirectories for results processing.
-
-            exectables(os.path) : Outside mp.Pool() version of saved file os.path,
-                                  Core.Directories_Search.executables_address, for the 'Executables' directory within
-                                  the CP2KAtomicSimProcessor package.
-
-            CalcKeys(dict)      : Outside mp.Pool() version of populated dictionary,
-                                  Core.Directories_Search.Dir_Calc_Keys, of list items of nested dictionary keys within
-                                  the Core.Directories_Search.Address_book/Core.ProcessingControls.Processing_Results
-                                  dictionaries for easier iterations through each specific calculation.
-
-            Results(dict)       : Outside mp.Pool() version of half-populated dictionary,
-                                  Core.ProcessingControls.Processing_Results, of specific calculations to be further
-                                  populated with the fully calculated products of user wanted result processing methods.
-    """
-
-    def __init__(self, f):
-        self._f = f
-
-    @staticmethod
-    def RsvAddrss4mp(Address_Book, exectables, CalcKeys, Results):
-
-        print(json.dumps(CalcKeys, indent=1))
-
-        Core.Directories_Search.Address_book = Address_Book
-        Core.Directories_Search.executables_address = exectables
-        Core.Directories_Search.Dir_Calc_Keys = CalcKeys
-        Core.ProcessCntrls.ProcessResults = Results
-
-
 # Entry point of code for multiprocessing.
 if __name__ =='__main__':
+    # t = time.time()
     Start()
+    # print("done in", time.time() - t)
+
     # limit CPUs available to pool child processes to 2/3 of local machine CPUs - CPUs left for grandchild processes.
-    CPUs2use = int(os.cpu_count() * 2/3)
-    p = PoolNoDaemonProcess(CPUs2use)
-
-    # conducting a single worker processes while blocking other workers to allow access to important data by the pool.
-    setup = p.apply(resave_.RsvAddrss4mp, [Core.Directories_Search.Address_book,
-                                           Core.Directories_Search.executables_address,
-                                           Core.Directories_Search.Dir_Calc_Keys,
-                                           Core.ProcessCntrls.ProcessResults])
-
-    # Give each available CPU a process for each selected result processing method - feed ProcessingWants to Rooting.
-    run = p.map(Rooting,Core.ProcessCntrls.ProcessWants)
-    p.close()
-    p.join()
+    # CPUs2use = int(os.cpu_count() * 2/3)
+    # p = PoolNoDaemonProcess(CPUs2use)
+    #
+    # # conducting a single worker processes while blocking other workers to allow access to important data by the pool.
+    # setup = p.apply(resave_.RsvAddrss4mp, [Core.Directories_Search.Address_book,
+    #                                        Core.Directories_Search.executables_address,
+    #                                        Core.Directories_Search.Dir_Calc_Keys,
+    #                                        Core.ProcessCntrls.ProcessResults])
+    #
+    # # Give each available CPU a process for each selected result processing method - feed ProcessingWants to Rooting.
+    # run = p.map(Rooting, Core.ProcessCntrls.ProcessWants)
+    # p.close()
+    # p.join()
 
